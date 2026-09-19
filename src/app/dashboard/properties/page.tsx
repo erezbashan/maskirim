@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getPropertiesByUser } from "@/lib/db";
 import { Property } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 
 export default function PropertiesPage() {
   const { user } = useAuth();
@@ -26,9 +27,12 @@ export default function PropertiesPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">הנכסים שלי</h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+        <Link 
+          href="/dashboard/properties/new" 
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+        >
           + הוסף נכס
-        </button>
+        </Link>
       </div>
 
       {properties.length === 0 ? (
@@ -38,16 +42,18 @@ export default function PropertiesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map(property => (
-            <Card key={property.id}>
-              <CardHeader>
-                <CardTitle>{property.address}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p><strong>עיר:</strong> {property.city}</p>
-                <p><strong>חדרים:</strong> {property.rooms}</p>
-                <p><strong>בעלים רשום:</strong> {property.ownerName}</p>
-              </CardContent>
-            </Card>
+            <Link href={`/dashboard/properties/${property.id}`} key={property.id} className="block transition-transform hover:-translate-y-1">
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle>{property.address}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p><strong>עיר:</strong> {property.city}</p>
+                  <p><strong>חדרים:</strong> {property.rooms}</p>
+                  <p><strong>בעלים רשום:</strong> {property.ownerName}</p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
