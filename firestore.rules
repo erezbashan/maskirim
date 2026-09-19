@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Properties collection
+    match /properties/{propertyId} {
+      // Users can only read/update/delete their own properties
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Users can only create a property if they assign their own userId to it
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Leases collection
+    match /leases/{leaseId} {
+      allow read, write: if request.auth != null; // We can lock this down later
+    }
+
+    // Expenses collection
+    match /expenses/{expenseId} {
+      allow read, write: if request.auth != null; // We can lock this down later
+    }
+    
+    // Reminders collection
+    match /reminders/{reminderId} {
+      allow read, write: if request.auth != null; // We can lock this down later
+    }
+  }
+}
