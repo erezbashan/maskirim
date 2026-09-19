@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import GlobalUploader from "@/components/GlobalUploader";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -18,9 +19,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex relative">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-l shadow-sm flex flex-col">
+      <aside className="w-64 bg-white border-l shadow-sm flex flex-col z-10">
         <div className="p-6 border-b">
           <h1 className="text-2xl font-bold text-blue-600">Maskirim</h1>
         </div>
@@ -49,9 +50,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 pb-32">
         {children}
       </main>
+
+      <GlobalUploader />
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import { collection, doc, setDoc, getDoc, getDocs, query, where, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db } from "./firebase/config";
-import { Property, Lease, Expense, Reminder } from "./types";
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "./firebase/config";
+import { Property, Lease, Expense, Reminder, Document as AppDocument } from "./types";
 
 // Properties
 export const addProperty = async (property: Property) => {
@@ -24,7 +25,33 @@ export const groupPropertiesByOwner = (properties: Property[]) => {
 };
 
 export const updateProperty = async (id: string, data: Partial<Property>) => {
-  await updateDoc(doc(db, "properties", id), data);
+  const docRef = doc(db, "properties", id);
+  const updates = data;
+  await updateDoc(docRef, updates);
+};
+
+export const deleteExpense = async (id: string) => {
+  const docRef = doc(db, "expenses", id);
+  await deleteDoc(docRef);
+};
+
+// Storage & Documents
+export const uploadDocumentFile = async (userId: string, file: File): Promise<string> => {
+  const timestamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+  const storageRef = ref(storage, `users/${userId}/documents/${timestamp}_${safeName}`);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
+};
+
+export const addDocumentRecord = async (docData: AppDocument) => {
+  return addDoc(collection(db, "documents"), docData);
+};
+
+export const getDocumentsByProperty = async (propertyId: string): Promise<AppDocument[]> => {
+  const q = query(collection(db, "documents"), where("propertyId", "==", propertyId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppDocument));
 };
 
 export const deleteProperty = async (id: string) => {

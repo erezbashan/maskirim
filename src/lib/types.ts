@@ -24,6 +24,7 @@ export interface Lease {
   startDate: string;
   endDate: string;
   monthlyRent: number;
+  paymentDueDay?: number; // Day of the month rent is due (1-31)
   guaranteeType?: string;
   documentUrl?: string; // Link to uploaded PDF
   createdAt: string;
@@ -37,6 +38,16 @@ export interface Expense {
   category: string; // e.g., "Maintenance", "Taxes", "Insurance"
   description?: string;
   receiptUrl?: string; // Link to uploaded receipt
+  createdAt: string;
+}
+
+export interface Document {
+  id?: string;
+  userId: string;
+  propertyId?: string;
+  name: string;
+  url: string;
+  type: 'LEASE' | 'EXPENSE' | 'ID_CARD' | 'OTHER';
   createdAt: string;
 }
 
