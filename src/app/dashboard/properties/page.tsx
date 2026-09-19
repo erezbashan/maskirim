@@ -49,7 +49,6 @@ export default function PropertiesPage() {
                 </CardHeader>
                 <CardContent>
                   <p><strong>עיר:</strong> {property.city}</p>
-                  <p><strong>חדרים:</strong> {property.rooms}</p>
                   <p><strong>בעלים רשום:</strong> {property.ownerName}</p>
                 </CardContent>
               </Card>

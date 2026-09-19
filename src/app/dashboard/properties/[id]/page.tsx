@@ -64,8 +64,6 @@ export default function PropertyDetailsPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <p><strong>בעלים רשום:</strong> {property.ownerName}</p>
-            <p><strong>חדרים:</strong> {property.rooms}</p>
-            {property.sizeSqm && <p><strong>גודל:</strong> {property.sizeSqm} מ"ר</p>}
             {property.notes && <p><strong>הערות:</strong> {property.notes}</p>}
           </CardContent>
         </Card>

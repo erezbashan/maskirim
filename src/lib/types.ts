@@ -11,8 +11,6 @@ export interface Property {
   ownerName: string; // The actual owner (e.g., "Myself", "My Son")
   address: string;
   city: string;
-  rooms: number;
-  sizeSqm?: number;
   notes?: string;
   createdAt: string;
 }
