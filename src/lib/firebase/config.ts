@@ -18,4 +18,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-export { app, auth, db, storage };
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+
+// Compat Initialization (Required for FirebaseUI)
+const compatApp = firebase.apps.length > 0 ? firebase.app() : firebase.initializeApp(firebaseConfig);
+const compatAuth = compatApp.auth();
+
+export { app, auth, db, storage, compatAuth };
