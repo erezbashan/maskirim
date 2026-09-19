@@ -13,6 +13,7 @@ export default function NewPropertyPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
   const [fileSelected, setFileSelected] = useState<File | null>(null);
 
@@ -35,8 +36,38 @@ export default function NewPropertyPage() {
 
   const handleUploadSubmit = async () => {
     if (!fileSelected) return;
-    alert("עיבוד מסמך יתווסף בשלב הבא (AI Parsing). בינתיים, אנא הזן ידנית.");
-    setShowManualForm(true);
+    
+    setParsing(true);
+    try {
+      const data = new FormData();
+      data.append("file", fileSelected);
+
+      const res = await fetch("/api/parse-lease", {
+        method: "POST",
+        body: data,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to parse document");
+      }
+
+      const parsedData = await res.json();
+      
+      setFormData({
+        ownerName: parsedData.ownerName || "",
+        address: parsedData.address || "",
+        city: parsedData.city || "",
+        notes: `שוכר: ${parsedData.tenantName || ''}\nשכירות: ${parsedData.monthlyRent || ''}\nתאריכים: ${parsedData.startDate || ''} עד ${parsedData.endDate || ''}\n${parsedData.notes || ''}`,
+      });
+
+      setShowManualForm(true);
+    } catch (err) {
+      console.error(err);
+      alert("אירעה שגיאה בפענוח המסמך. אנא הזן את הפרטים ידנית.");
+      setShowManualForm(true);
+    } finally {
+      setParsing(false);
+    }
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
@@ -73,7 +104,7 @@ export default function NewPropertyPage() {
         <CardHeader className="bg-blue-50/50 border-b">
           <CardTitle className="text-2xl text-blue-800">הוספת נכס חדש</CardTitle>
           <CardDescription>
-            הדרך המהירה ביותר להוסיף נכס היא להעלות את חוזה השכירות. המערכת תפענח אותו אוטומטית.
+            הדרך המהירה ביותר להוסיף נכס היא להעלות את חוזה השכירות. המערכת תפענח אותו אוטומטית בעזרת בינה מלאכותית.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
@@ -90,27 +121,27 @@ export default function NewPropertyPage() {
             <button 
               type="button"
               onClick={() => setShowManualForm(true)}
-              className="text-gray-500 text-sm hover:underline"
+              className="text-blue-700 font-semibold hover:underline text-lg"
             >
-              הזנה ידנית (אופציה משנית)
+              הזנה ידנית
             </button>
             <button 
               type="button"
               onClick={handleUploadSubmit}
-              disabled={!fileSelected}
+              disabled={!fileSelected || parsing}
               className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 disabled:opacity-50"
             >
-              העלה ופענח חוזה
+              {parsing ? "מפענח..." : "העלה ופענח חוזה"}
             </button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Manual Entry Section - Secondary */}
+      {/* Manual Entry Section */}
       {showManualForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">הזנת פרטי נכס ידנית</CardTitle>
+            <CardTitle className="text-xl">פרטי נכס</CardTitle>
           </CardHeader>
           <form onSubmit={handleManualSubmit}>
             <CardContent className="space-y-4">
@@ -131,7 +162,7 @@ export default function NewPropertyPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">הערות (אופציונלי)</Label>
+                <Label htmlFor="notes">הערות ופרטי חוזה (אופציונלי)</Label>
                 <textarea 
                   id="notes" 
                   name="notes" 

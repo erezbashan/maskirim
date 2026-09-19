@@ -28,7 +28,10 @@ export default function LoginPage() {
           signInFlow: "popup",
           signInOptions: [
             firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-            firebase.auth.EmailAuthProvider.PROVIDER_ID,
+            {
+              provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+              requireDisplayName: false
+            }
           ],
           tosUrl: "/",
           privacyPolicyUrl: "/",
