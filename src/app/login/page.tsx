@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { compatAuth } from "@/lib/firebase/config";
 import firebase from "firebase/compat/app";
-import * as firebaseui from "firebaseui";
 import "firebaseui/dist/firebaseui.css";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -20,19 +19,18 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && !loading && !user) {
-      // Use existing instance or create a new one
-      const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(compatAuth);
-      
-      ui.start("#firebaseui-auth-container", {
-        signInSuccessUrl: "/dashboard",
-        signInOptions: [
-          // Leave only Email for now, can add Google easily
-          firebase.auth.EmailAuthProvider.PROVIDER_ID,
-        ],
-        // Terms of service url.
-        tosUrl: "/",
-        // Privacy policy url.
-        privacyPolicyUrl: "/",
+      // Dynamically import firebaseui to avoid SSR window issues
+      import("firebaseui").then((firebaseui) => {
+        const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(compatAuth);
+        
+        ui.start("#firebaseui-auth-container", {
+          signInSuccessUrl: "/dashboard",
+          signInOptions: [
+            firebase.auth.EmailAuthProvider.PROVIDER_ID,
+          ],
+          tosUrl: "/",
+          privacyPolicyUrl: "/",
+        });
       });
     }
   }, [loading, user]);
