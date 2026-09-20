@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-2.5-pro for superior Hebrew handwriting OCR
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+    // Reverting to gemini-3.5-flash as requested
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
