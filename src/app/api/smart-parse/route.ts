@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use stable gemini-3.5-flash as per previous fixes
-    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+    // Use stable gemini-3.5-flash-lite to avoid 503
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
