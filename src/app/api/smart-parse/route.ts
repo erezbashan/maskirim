@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
         "documentType": "LEASE" | "EXPENSE" | "ID_CARD" | "OTHER",
         "propertyInfo": {
           "address": "Extracted street address (or empty string)",
-          "city": "Extracted city (or empty string)"
+          "city": "Extracted city (or empty string)",
+          "ownerName": "Extracted landlord/owner name (המשכיר)"
         },
         "leaseInfo": {
           "tenantNames": ["Array of tenant names"],

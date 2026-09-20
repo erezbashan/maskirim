@@ -62,7 +62,7 @@ export default function GlobalUploader() {
       if (parsedData.propertyInfo?.address) {
         targetPropertyId = await addProperty({
           userId: user.uid,
-          ownerName: user.name || "אני",
+          ownerName: parsedData.propertyInfo.ownerName || user.name || "אני",
           address: parsedData.propertyInfo.address,
           city: parsedData.propertyInfo.city || "",
           createdAt: new Date().toISOString()
@@ -163,9 +163,15 @@ export default function GlobalUploader() {
               <CardTitle>אישור נתונים שחולצו ({parsedData.documentType})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label>כתובת (נכס)</Label>
-                <Input value={parsedData.propertyInfo?.address || ""} onChange={(e) => setParsedData({...parsedData, propertyInfo: {...parsedData.propertyInfo, address: e.target.value}})} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>כתובת (נכס)</Label>
+                  <Input value={parsedData.propertyInfo?.address || ""} onChange={(e) => setParsedData({...parsedData, propertyInfo: {...parsedData.propertyInfo, address: e.target.value}})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>בעלים רשום (משכיר)</Label>
+                  <Input value={parsedData.propertyInfo?.ownerName || ""} onChange={(e) => setParsedData({...parsedData, propertyInfo: {...parsedData.propertyInfo, ownerName: e.target.value}})} />
+                </div>
               </div>
               
               {parsedData.documentType === "LEASE" && (
