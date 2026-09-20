@@ -17,15 +17,16 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use stable gemini-3.5-flash-lite to avoid 503
-    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
+    // Use gemini-2.5-pro for superior Hebrew handwriting OCR
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const prompt = `
-      You are an expert real estate property manager AI.
-      Analyze this document (which may be a lease, an extension, a receipt, an ID card, or an expense invoice).
+      You are an expert real estate property manager AI fluent in Hebrew.
+      Analyze this document (which may be a formal lease, an extension, a handwritten note, a receipt, an ID card, or an expense invoice).
+      Pay special attention to Hebrew handwriting (e.g. names, dates, amounts).
       Extract the relevant information and return it strictly in this JSON format.
       Do NOT include any markdown formatting, just the raw JSON string.
       
