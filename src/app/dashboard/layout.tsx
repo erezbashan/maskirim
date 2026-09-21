@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ראשי
           </Link>
           <Link href="/dashboard/properties" className="block px-4 py-2 rounded text-gray-700 hover:bg-gray-100">
-            הנכסים שלי
+            נכסים
           </Link>
           <Link href="/dashboard/taxes" className="block px-4 py-2 rounded text-gray-700 hover:bg-gray-100">
             סימולטור מס
