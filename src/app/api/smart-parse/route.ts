@@ -58,15 +58,27 @@ export async function POST(req: NextRequest) {
       If a field is missing or not applicable, leave it empty or 0.
     `;
 
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: buffer.toString("base64"),
-          mimeType: file.type || "application/pdf"
-        }
-      },
-      prompt
-    ]);
+    let result;
+    let retries = 2;
+    while (retries >= 0) {
+      try {
+        result = await model.generateContent([
+          {
+            inlineData: {
+              data: buffer.toString("base64"),
+              mimeType: file.type || "application/pdf"
+            }
+          },
+          prompt
+        ]);
+        break;
+      } catch (err: any) {
+        if (retries === 0) throw err;
+        console.warn(`generateContent failed (${err.message}). Retrying... (${retries} left)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        retries--;
+      }
+    }
 
     let responseText = result.response.text().trim();
     // Clean up any markdown blocks if the model ignored instructions

@@ -39,15 +39,27 @@ export async function POST(req: NextRequest) {
       }
     `;
 
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: buffer.toString("base64"),
-          mimeType: file.type,
-        },
-      },
-      prompt,
-    ]);
+    let result;
+    let retries = 2;
+    while (retries >= 0) {
+      try {
+        result = await model.generateContent([
+          {
+            inlineData: {
+              data: buffer.toString("base64"),
+              mimeType: file.type || "application/pdf"
+            }
+          },
+          prompt
+        ]);
+        break;
+      } catch (err: any) {
+        if (retries === 0) throw err;
+        console.warn(`generateContent failed (${err.message}). Retrying... (${retries} left)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        retries--;
+      }
+    }
 
     let responseText = result.response.text().trim();
     // Clean up potential markdown formatting
