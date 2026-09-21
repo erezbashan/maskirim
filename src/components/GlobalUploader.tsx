@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { uploadDocumentFile, addDocumentRecord, addLease, addExpense, addProperty } from "@/lib/db";
+import { uploadDocumentFile, addDocumentRecord, addTenant, addRentPeriod, addExpense, addProperty } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,15 +70,23 @@ export default function GlobalUploader() {
       }
 
       // 3. Save Specific Entity
-      if (parsedData.documentType === "LEASE") {
-        await addLease({
+      let targetTenantId = undefined;
+      let targetRentPeriodId = undefined;
+
+      if (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") {
+        targetTenantId = await addTenant({
           propertyId: targetPropertyId,
-          tenantName: parsedData.leaseInfo?.tenantNames?.[0] || "שוכר לא ידוע",
-          startDate: parsedData.leaseInfo?.startDate || "",
-          endDate: parsedData.leaseInfo?.endDate || "",
-          monthlyRent: parsedData.leaseInfo?.monthlyRent || 0,
-          paymentDueDay: parsedData.leaseInfo?.paymentDueDay || 1,
-          guaranteeType: parsedData.leaseInfo?.guarantees || "",
+          name: parsedData.tenantInfo?.name || "שוכר לא ידוע",
+          createdAt: new Date().toISOString()
+        });
+
+        targetRentPeriodId = await addRentPeriod({
+          tenantId: targetTenantId,
+          startDate: parsedData.rentPeriodInfo?.startDate || "",
+          endDate: parsedData.rentPeriodInfo?.endDate || "",
+          monthlyRent: parsedData.rentPeriodInfo?.monthlyRent || 0,
+          paymentDueDay: parsedData.rentPeriodInfo?.paymentDueDay || 1,
+          guaranteeType: parsedData.rentPeriodInfo?.guarantees || "",
           documentUrl: fileUrl,
           createdAt: new Date().toISOString()
         });
@@ -98,9 +106,11 @@ export default function GlobalUploader() {
       await addDocumentRecord({
         userId: user.uid,
         propertyId: targetPropertyId !== "UNKNOWN" ? targetPropertyId : undefined,
+        tenantId: targetTenantId,
+        rentPeriodId: targetRentPeriodId,
         name: originalFile.name,
         url: fileUrl,
-        type: parsedData.documentType === "LEASE" ? "LEASE" : parsedData.documentType === "EXPENSE" ? "EXPENSE" : "OTHER",
+        type: (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") ? "LEASE" : parsedData.documentType === "EXPENSE" ? "EXPENSE" : "OTHER",
         createdAt: new Date().toISOString()
       });
 
@@ -174,30 +184,30 @@ export default function GlobalUploader() {
                 </div>
               </div>
               
-              {parsedData.documentType === "LEASE" && (
+              {(parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") && (
                 <>
                   <div className="space-y-2">
                     <Label>שוכרים</Label>
-                    <Input value={(parsedData.leaseInfo?.tenantNames || []).join(", ")} onChange={(e) => setParsedData({...parsedData, leaseInfo: {...parsedData.leaseInfo, tenantNames: e.target.value.split(",")}})} />
+                    <Input value={parsedData.tenantInfo?.name || ""} onChange={(e) => setParsedData({...parsedData, tenantInfo: {...parsedData.tenantInfo, name: e.target.value}})} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>שכירות (₪)</Label>
-                      <Input type="number" value={parsedData.leaseInfo?.monthlyRent || 0} onChange={(e) => setParsedData({...parsedData, leaseInfo: {...parsedData.leaseInfo, monthlyRent: parseFloat(e.target.value)}})} />
+                      <Input type="number" value={parsedData.rentPeriodInfo?.monthlyRent || 0} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, monthlyRent: parseFloat(e.target.value)}})} />
                     </div>
                     <div className="space-y-2">
                       <Label>יום תשלום בחודש</Label>
-                      <Input type="number" value={parsedData.leaseInfo?.paymentDueDay || 1} onChange={(e) => setParsedData({...parsedData, leaseInfo: {...parsedData.leaseInfo, paymentDueDay: parseInt(e.target.value)}})} />
+                      <Input type="number" value={parsedData.rentPeriodInfo?.paymentDueDay || 1} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, paymentDueDay: parseInt(e.target.value)}})} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>תאריך התחלה</Label>
-                      <Input type="date" value={parsedData.leaseInfo?.startDate || ""} onChange={(e) => setParsedData({...parsedData, leaseInfo: {...parsedData.leaseInfo, startDate: e.target.value}})} />
+                      <Input type="date" value={parsedData.rentPeriodInfo?.startDate || ""} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, startDate: e.target.value}})} />
                     </div>
                     <div className="space-y-2">
                       <Label>תאריך סיום</Label>
-                      <Input type="date" value={parsedData.leaseInfo?.endDate || ""} onChange={(e) => setParsedData({...parsedData, leaseInfo: {...parsedData.leaseInfo, endDate: e.target.value}})} />
+                      <Input type="date" value={parsedData.rentPeriodInfo?.endDate || ""} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, endDate: e.target.value}})} />
                     </div>
                   </div>
                 </>

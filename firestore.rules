@@ -10,8 +10,13 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
 
-    // Leases collection
-    match /leases/{leaseId} {
+    // Tenants collection
+    match /tenants/{tenantId} {
+      allow read, write: if request.auth != null; // We can lock this down later
+    }
+
+    // Rent Periods collection
+    match /rentPeriods/{periodId} {
       allow read, write: if request.auth != null; // We can lock this down later
     }
 

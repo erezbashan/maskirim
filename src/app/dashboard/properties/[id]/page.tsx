@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { getPropertiesByUser, getLeasesByProperty, getExpensesByProperty, getDocumentsByProperty } from "@/lib/db";
-import { Property, Lease, Expense, Document as AppDocument } from "@/lib/types";
+import { getPropertiesByUser, getTenantsByProperty, getExpensesByProperty, getDocumentsByProperty } from "@/lib/db";
+import { Property, Tenant, Expense, Document as AppDocument } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
@@ -16,7 +16,7 @@ export default function PropertyDetailsPage() {
   const { user } = useAuth();
   
   const [property, setProperty] = useState<Property | null>(null);
-  const [leases, setLeases] = useState<Lease[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [documents, setDocuments] = useState<AppDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +31,8 @@ export default function PropertyDetailsPage() {
         const prop = userProps.find(p => p.id === id);
         if (prop) setProperty(prop);
 
-        const propLeases = await getLeasesByProperty(id);
-        setLeases(propLeases);
+        const propTenants = await getTenantsByProperty(id);
+        setTenants(propTenants);
 
         const propExpenses = await getExpensesByProperty(id);
         setExpenses(propExpenses);
@@ -77,26 +77,25 @@ export default function PropertyDetailsPage() {
 
         <Card className="md:col-span-2">
           <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle>חוזי שכירות</CardTitle>
+            <CardTitle>שוכרים (Tenants)</CardTitle>
             <Link 
-              href={`/dashboard/properties/${id}/leases/new`}
+              href={`/dashboard/properties/${id}/tenants/new`}
               className="bg-blue-600 text-white px-3 py-1 text-sm rounded hover:bg-blue-700"
             >
-              הוסף חוזה
+              הוסף שוכר חדש
             </Link>
           </CardHeader>
           <CardContent>
-            {leases.length === 0 ? (
-              <p className="text-gray-500">אין חוזים פעילים.</p>
+            {tenants.length === 0 ? (
+              <p className="text-gray-500">אין שוכרים רשומים.</p>
             ) : (
               <ul className="space-y-2">
-                {leases.map(lease => (
-                  <li key={lease.id} className="border p-3 rounded">
-                    <strong>{lease.tenantName}</strong> - {lease.monthlyRent} ₪ / חודש
-                    <br />
-                    <span className="text-sm text-gray-600">
-                      תוקף: {new Date(lease.startDate).toLocaleDateString()} עד {new Date(lease.endDate).toLocaleDateString()}
-                    </span>
+                {tenants.map(tenant => (
+                  <li key={tenant.id} className="border p-3 rounded hover:bg-gray-50 transition cursor-pointer" onClick={() => router.push(`/dashboard/properties/${id}/tenants/${tenant.id}`)}>
+                    <div className="flex justify-between items-center">
+                      <strong>{tenant.name}</strong>
+                      <span className="text-sm text-blue-600 font-medium">לפרטים מורחבים</span>
+                    </div>
                   </li>
                 ))}
               </ul>

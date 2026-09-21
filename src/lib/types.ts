@@ -15,18 +15,26 @@ export interface Property {
   createdAt: string;
 }
 
-export interface Lease {
+export interface Tenant {
   id?: string;
   propertyId: string;
-  tenantName: string;
-  tenantPhone?: string;
-  tenantEmail?: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  createdAt: string;
+}
+
+export interface RentPeriod {
+  id?: string;
+  tenantId: string;
   startDate: string;
   endDate: string;
   monthlyRent: number;
-  paymentDueDay?: number; // Day of the month rent is due (1-31)
+  paymentDueDay?: number;
+  renewalDeadline?: string; // e.g. date by which renewal must be agreed
+  renewalTerms?: string;
   guaranteeType?: string;
-  documentUrl?: string; // Link to uploaded PDF
+  documentUrl?: string; // Link to extension/lease agreement PDF
   createdAt: string;
 }
 
@@ -45,9 +53,11 @@ export interface Document {
   id?: string;
   userId: string;
   propertyId?: string;
+  tenantId?: string;
+  rentPeriodId?: string;
   name: string;
   url: string;
-  type: 'LEASE' | 'EXPENSE' | 'ID_CARD' | 'OTHER';
+  type: 'LEASE' | 'EXTENSION' | 'EXPENSE' | 'ID_CARD' | 'OTHER';
   createdAt: string;
 }
 

@@ -1,7 +1,7 @@
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase/config";
-import { Property, Lease, Expense, Reminder, Document as AppDocument } from "./types";
+import { Property, Tenant, RentPeriod, Expense, Reminder, Document as AppDocument } from "./types";
 
 // Properties
 export const addProperty = async (property: Property) => {
@@ -58,16 +58,34 @@ export const deleteProperty = async (id: string) => {
   await deleteDoc(doc(db, "properties", id));
 };
 
-// Leases
-export const addLease = async (lease: Lease) => {
-  const docRef = await addDoc(collection(db, "leases"), lease);
+// Tenants
+export const addTenant = async (tenant: Tenant) => {
+  const docRef = await addDoc(collection(db, "tenants"), tenant);
   return docRef.id;
 };
 
-export const getLeasesByProperty = async (propertyId: string): Promise<Lease[]> => {
-  const q = query(collection(db, "leases"), where("propertyId", "==", propertyId));
+export const getTenantsByProperty = async (propertyId: string): Promise<Tenant[]> => {
+  const q = query(collection(db, "tenants"), where("propertyId", "==", propertyId));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lease));
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tenant));
+};
+
+export const getTenantById = async (id: string): Promise<Tenant | null> => {
+  const docSnap = await getDoc(doc(db, "tenants", id));
+  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() } as Tenant;
+  return null;
+};
+
+// Rent Periods
+export const addRentPeriod = async (period: RentPeriod) => {
+  const docRef = await addDoc(collection(db, "rentPeriods"), period);
+  return docRef.id;
+};
+
+export const getRentPeriodsByTenant = async (tenantId: string): Promise<RentPeriod[]> => {
+  const q = query(collection(db, "rentPeriods"), where("tenantId", "==", tenantId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentPeriod));
 };
 
 // Expenses

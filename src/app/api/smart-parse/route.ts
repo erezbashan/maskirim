@@ -31,28 +31,30 @@ export async function POST(req: NextRequest) {
       Do NOT include any markdown formatting, just the raw JSON string.
       
       {
-        "documentType": "LEASE" | "EXPENSE" | "ID_CARD" | "OTHER",
+        "documentType": "LEASE" | "EXTENSION" | "EXPENSE" | "ID_CARD" | "OTHER",
         "propertyInfo": {
           "address": "Extracted street address (or empty string)",
           "city": "Extracted city (or empty string)",
           "ownerName": "Extracted landlord/owner name (המשכיר)"
         },
-        "leaseInfo": {
-          "tenantNames": ["Array of tenant names"],
-          "monthlyRent": 0,
+        "tenantInfo": {
+          "name": "Extracted tenant name (השוכר)"
+        },
+        "rentPeriodInfo": {
           "startDate": "YYYY-MM-DD",
           "endDate": "YYYY-MM-DD",
-          "paymentDueDay": 0, // e.g., 10 if due on the 10th of every month
-          "guarantees": "Description of guarantees or deposits"
+          "monthlyRent": 0,
+          "paymentDueDay": 1,
+          "guarantees": "Extracted guarantee details"
         },
         "expenseInfo": {
           "amount": 0,
-          "description": "What was the expense for?",
-          "date": "YYYY-MM-DD"
+          "date": "YYYY-MM-DD",
+          "description": "Short description of expense"
         }
       }
       
-      If the document is a LEASE or extension, fill leaseInfo. If it's a receipt/invoice, fill expenseInfo.
+      If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo.
       If a field is missing or not applicable, leave it empty or 0.
     `;
 
