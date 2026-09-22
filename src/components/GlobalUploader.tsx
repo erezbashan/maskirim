@@ -9,6 +9,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const getNormalizedWords = (str: string) => {
+  return str
+    .replace(/[,\.-]/g, " ")
+    .split(/\s+/)
+    .filter(w => w.length > 0)
+    .map(w => {
+       if (w.length > 2 && w.startsWith("ו")) return w.substring(1);
+       return w;
+    });
+};
+
+const calculateSimilarity = (str1: string, str2: string) => {
+  const words1 = getNormalizedWords(str1);
+  const words2 = getNormalizedWords(str2);
+  
+  if (words1.length === 0 || words2.length === 0) return 0;
+  
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+  
+  let intersection = 0;
+  set1.forEach(w => {
+    if (set2.has(w)) intersection++;
+  });
+  
+  return intersection / Math.min(set1.size, set2.size);
+};
+
 export default function GlobalUploader() {
   const { user } = useAuth();
   const router = useRouter();
@@ -22,18 +50,14 @@ export default function GlobalUploader() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("NEW");
-  const [selectedTenantId, setSelectedTenantId] = useState<string>("NEW");
+  const [selectedTenantId, setSelectedTenantId] = useState<string>("");
   
   useEffect(() => {
     if (user && step === "REVIEW") {
       getPropertiesByUser(user.uid).then(fetchedProps => {
         setProperties(fetchedProps);
         if (parsedData?.propertyInfo?.address) {
-          const extractedAddress = parsedData.propertyInfo.address.replace(/\s+/g, "");
-          const match = fetchedProps.find(p => 
-            p.address.replace(/\s+/g, "").includes(extractedAddress) || 
-            extractedAddress.includes(p.address.replace(/\s+/g, ""))
-          );
+          const match = fetchedProps.find(p => calculateSimilarity(p.address, parsedData.propertyInfo.address) >= 0.75);
           if (match && match.id) {
             setSelectedPropertyId(match.id);
           }
@@ -43,15 +67,11 @@ export default function GlobalUploader() {
   }, [user, step, parsedData]);
 
   useEffect(() => {
-    if (selectedPropertyId !== "NEW" && selectedPropertyId !== "UNKNOWN") {
+    if (selectedPropertyId !== "NEW" && selectedPropertyId !== "UNKNOWN" && selectedPropertyId !== "") {
       getTenantsByProperty(selectedPropertyId).then(fetchedTenants => {
         setTenants(fetchedTenants);
         if (parsedData?.tenantInfo?.name) {
-          const extractedName = parsedData.tenantInfo.name.replace(/\s+/g, "");
-          const match = fetchedTenants.find(t => 
-            t.name.replace(/\s+/g, "").includes(extractedName) || 
-            extractedName.includes(t.name.replace(/\s+/g, ""))
-          );
+          const match = fetchedTenants.find(t => calculateSimilarity(t.name, parsedData.tenantInfo.name) >= 0.75);
           if (match && match.id) {
             setSelectedTenantId(match.id);
           } else {
