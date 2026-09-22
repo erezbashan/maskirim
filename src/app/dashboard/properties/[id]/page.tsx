@@ -8,6 +8,7 @@ import { getPropertiesByUser, getTenantsByProperty, getExpensesByProperty, getDo
 import { Property, Tenant, Expense, Document as AppDocument, RentPeriod } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 export default function PropertyDetailsPage() {
@@ -131,8 +132,12 @@ export default function PropertyDetailsPage() {
                         {tenant.paymentDueDay && <p className="text-sm text-gray-600">יום תשלום: ה-{tenant.paymentDueDay} בחודש</p>}
                       </div>
                       <div className="flex space-x-3 space-x-reverse">
-                        <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/edit`} className="text-blue-600 text-sm hover:underline font-medium">ערוך שוכר</Link>
-                        <button onClick={() => handleDeleteTenant(tenant.id!)} className="text-red-600 text-sm hover:underline font-medium">מחק שוכר</button>
+                        <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/edit`} className="text-gray-500 hover:text-blue-600 transition" title="ערוך שוכר">
+                          <Pencil className="w-5 h-5" />
+                        </Link>
+                        <button onClick={() => handleDeleteTenant(tenant.id!)} className="text-gray-500 hover:text-red-600 transition" title="מחק שוכר">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
                     <div className="p-4 bg-white">
@@ -153,9 +158,13 @@ export default function PropertyDetailsPage() {
                                 <p><strong>שכירות:</strong> ₪{period.monthlyRent}</p>
                                 {period.guaranteeType && <p><strong>ערבות:</strong> {period.guaranteeType}</p>}
                               </div>
-                              <div className="flex space-x-3 space-x-reverse text-xs mt-3 pt-2 border-t border-gray-100">
-                                <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/rent-periods/${period.id}/edit`} className="text-blue-600 hover:underline">ערוך תקופה</Link>
-                                <button onClick={() => handleDeleteRentPeriod(tenant.id!, period.id!, period.documentUrl)} className="text-red-600 hover:underline">מחק תקופה</button>
+                              <div className="flex space-x-3 space-x-reverse text-xs mt-3 pt-2 border-t border-gray-100 items-center">
+                                <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/rent-periods/${period.id}/edit`} className="text-gray-400 hover:text-blue-600 transition" title="ערוך תקופה">
+                                  <Pencil className="w-4 h-4" />
+                                </Link>
+                                <button onClick={() => handleDeleteRentPeriod(tenant.id!, period.id!, period.documentUrl)} className="text-gray-400 hover:text-red-600 transition" title="מחק תקופה">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                                 {period.documentUrl && (
                                   <a href={period.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-semibold pr-2 border-r border-gray-300">📄 צפה בחוזה</a>
                                 )}
