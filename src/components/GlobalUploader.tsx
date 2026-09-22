@@ -297,23 +297,12 @@ export default function GlobalUploader() {
 
   return (
     <>
-      <div className="fixed bottom-8 left-8 z-50">
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          onChange={handleFileSelect} 
-        />
-        <button 
-          type="button"
-          onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
-          disabled={step !== "IDLE"}
-          className="bg-blue-600 text-white p-4 rounded-full shadow-xl hover:bg-blue-700 transition flex items-center justify-center space-x-2 space-x-reverse disabled:opacity-50"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-          <span className="font-bold text-lg">תיבה חכמה (העלה מסמך)</span>
-        </button>
-      </div>
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        onChange={handleFileSelect} 
+      />
 
       {step === "ANALYZING" && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

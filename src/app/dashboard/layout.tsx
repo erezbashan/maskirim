@@ -6,6 +6,7 @@ import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import GlobalUploader from "@/components/GlobalUploader";
+import { Upload } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -22,8 +23,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-gray-50 flex relative">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-l shadow-sm flex flex-col z-10">
-        <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold text-blue-600">Maskirim</h1>
+        <div className="p-4 border-b space-y-4">
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent("open-smart-uploader"))}
+            className="w-full bg-blue-600 text-white p-3 rounded-lg shadow-sm hover:bg-blue-700 transition flex items-center justify-center space-x-2 space-x-reverse font-bold text-sm"
+          >
+            <Upload className="w-5 h-5" />
+            <span>תיבה חכמה (העלאת מסמכים)</span>
+          </button>
         </div>
         <nav className="flex-1 p-4 space-y-2">
           <Link href="/dashboard" className="block px-4 py-2 rounded text-gray-700 hover:bg-gray-100">
@@ -36,10 +43,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             סימולטור מס
           </Link>
         </nav>
-        <div className="p-4 border-t">
+        <div className="p-4 border-t space-y-2">
           <div className="text-sm mb-2 truncate" title={user.email || ""}>
             {user.email}
           </div>
+          <button 
+            onClick={() => window.location.href = `mailto:erez.bashan@gmail.com?subject=Feedback%20on%20Property%20Manager&body=URL:%20${encodeURIComponent(window.location.href)}%0A%0AFeedback:%20`}
+            className="w-full text-center px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition"
+          >
+            שלח משוב
+          </button>
           <button 
             onClick={handleLogout}
             className="w-full text-center px-4 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"

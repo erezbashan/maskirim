@@ -191,7 +191,6 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-bold mb-6">ברוך הבא למערכת ניהול הנכסים</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col h-full">
             <h3 className="text-xl font-semibold mb-4 border-b pb-2">הנכסים שלי ({propertiesCount})</h3>
