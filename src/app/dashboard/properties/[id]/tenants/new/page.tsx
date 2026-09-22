@@ -8,6 +8,7 @@ import { Tenant } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SmartUploadHeader } from "@/components/SmartUploadHeader";
 
 export default function NewTenantPage() {
   const { id: propertyId } = useParams() as { id: string };
@@ -58,6 +59,8 @@ export default function NewTenantPage() {
           חזור
         </button>
       </div>
+      
+      <SmartUploadHeader title="רוצה לדלג על הקלדה?" description="הזן את הפרטים ידנית להלן, או לחץ כאן כדי להעלות חוזה שכירות והמערכת תמלא את הכל באופן אוטומטי!" />
 
       <Card>
         <form onSubmit={handleSubmit}>

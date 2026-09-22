@@ -46,6 +46,14 @@ export default function GlobalUploader() {
   const [parsedData, setParsedData] = useState<any>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [step, setStep] = useState<"IDLE" | "ANALYZING" | "REVIEW" | "SAVING">("IDLE");
+
+  useEffect(() => {
+    const handleOpenUploader = () => {
+      fileInputRef.current?.click();
+    };
+    window.addEventListener("open-smart-uploader", handleOpenUploader);
+    return () => window.removeEventListener("open-smart-uploader", handleOpenUploader);
+  }, []);
   
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);

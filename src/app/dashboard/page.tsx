@@ -115,12 +115,15 @@ export default function DashboardPage() {
                 }
 
                 // 3. Check Option Deadline
-                if (p.renewalDeadline) {
+                if (p.renewalDeadline && !(p as any).renewalDeadlineDismissed) {
                   const deadlineDate = new Date(p.renewalDeadline);
                   const deadlineDiffTime = deadlineDate.getTime() - now.getTime();
                   const deadlineDiffDays = Math.ceil(deadlineDiffTime / (1000 * 60 * 60 * 24));
                   
-                  if (deadlineDiffDays >= 0 && deadlineDiffDays <= 30) {
+                  // Make sure no newer rent period exists for this tenant
+                  const hasNewerPeriod = periods.some(otherP => new Date(otherP.startDate) > new Date(p.startDate));
+                  
+                  if (!hasNewerPeriod && deadlineDiffDays >= 0 && deadlineDiffDays <= 30) {
                     generatedReminders.push({
                       id: `option-${p.id}`,
                       type: 'OPTION_DEADLINE',
@@ -156,11 +159,25 @@ export default function DashboardPage() {
         amount: reminder.amount!,
         status: 'PAID'
       });
-      // Refresh the dashboard data
-      setRefreshTrigger(prev => prev + 1);
+      // Navigate to payment history
+      router.push(`/dashboard/properties/${reminder.propertyId}/tenants/${reminder.tenantId}/payments`);
     } catch (err) {
       console.error(err);
       alert("שגיאה בעדכון התשלום");
+    }
+  };
+
+  const handleDismissOption = async (reminder: ActiveReminder) => {
+    if (!user || !reminder.periodId) return;
+    try {
+      const { doc, updateDoc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase/config");
+      await updateDoc(doc(db, "rentPeriods", reminder.periodId), {
+        renewalDeadlineDismissed: true
+      });
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -203,7 +220,7 @@ export default function DashboardPage() {
                     reminder.type === 'LEASE_EXPIRATION' ? 'bg-red-100 text-red-600' :
                     'bg-orange-100 text-orange-600'
                   }`}>
-                    {reminder.type === 'PAYMENT_DUE' && <Check className="w-5 h-5" />}
+                    {reminder.type === 'PAYMENT_DUE' && <span className="text-lg font-bold">₪</span>}
                     {reminder.type === 'LEASE_EXPIRATION' && <FileText className="w-5 h-5" />}
                     {reminder.type === 'OPTION_DEADLINE' && <AlertTriangle className="w-5 h-5" />}
                   </div>
@@ -212,7 +229,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-gray-600">{reminder.description}</p>
                   </div>
                 </div>
-                <div>
+                <div className="flex gap-2">
                   {reminder.type === 'PAYMENT_DUE' && (
                     <button 
                       onClick={() => handleMarkPaid(reminder)}
@@ -230,12 +247,20 @@ export default function DashboardPage() {
                     </Link>
                   )}
                   {reminder.type === 'OPTION_DEADLINE' && (
-                    <Link 
-                      href={`/dashboard/properties/${reminder.propertyId}/tenants/${reminder.tenantId}/edit`}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm font-medium transition inline-block"
-                    >
-                      צפה בשוכר
-                    </Link>
+                    <>
+                      <button 
+                        onClick={() => handleDismissOption(reminder)}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm font-medium transition"
+                      >
+                        הסתר
+                      </button>
+                      <Link 
+                        href={`/dashboard/properties/${reminder.propertyId}/tenants/${reminder.tenantId}/edit`}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition inline-block"
+                      >
+                        צפה בשוכר
+                      </Link>
+                    </>
                   )}
                 </div>
               </div>

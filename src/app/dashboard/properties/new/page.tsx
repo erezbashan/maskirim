@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { SmartUploadHeader } from "@/components/SmartUploadHeader";
+
 export default function NewPropertyPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -54,14 +56,7 @@ export default function NewPropertyPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       
-      <Card className="border-blue-200 shadow-md">
-        <CardHeader className="bg-blue-50/50 border-b">
-          <CardTitle className="text-2xl text-blue-800">הוספת נכס חדש</CardTitle>
-          <CardDescription>
-            הזן את פרטי הנכס ידנית להלן, או השתמש <b>בתיבה החכמה</b> בתחתית המסך כדי להעלות חוזה והמערכת תקים את הנכס, השוכר, ותקופת השכירות באופן אוטומטי!
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <SmartUploadHeader title="הוספת נכס חדש" />
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">פרטי נכס</CardTitle>

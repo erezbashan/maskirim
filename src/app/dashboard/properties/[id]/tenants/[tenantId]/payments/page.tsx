@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState, use } from "react";
-import { getRentPaymentsByUser } from "@/lib/db";
+import { getRentPaymentsByUser, addRentPayment } from "@/lib/db";
 import { updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { RentPayment } from "@/lib/types";
@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Check } from "lucide-react";
+import { Trash2, Check, Pencil } from "lucide-react";
+import { HebrewDatePicker } from "@/components/ui/date-picker";
 
 export default function TenantPaymentsPage({ params }: { params: Promise<{ id: string; tenantId: string }> }) {
   const { id, tenantId } = use(params);
@@ -85,6 +86,32 @@ export default function TenantPaymentsPage({ params }: { params: Promise<{ id: s
         </Link>
       </div>
 
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold">תשלומים רשומים</h3>
+        <button 
+          onClick={() => {
+            const amt = prompt("הכנס סכום (₪):");
+            if (!amt) return;
+            const dt = prompt("הכנס תאריך (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+            if (!dt) return;
+            // A simple prompt-based addition for now, or just use the DB function
+            addRentPayment({
+              userId: user!.uid,
+              propertyId: id,
+              tenantId: tenantId,
+              rentPeriodId: payments[0]?.rentPeriodId || 'manual',
+              expectedDate: dt,
+              paidDate: new Date(dt).toISOString(),
+              amount: Number(amt),
+              status: 'PAID'
+            }).then(() => fetchPayments());
+          }}
+          className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+        >
+          + תשלום ידני
+        </button>
+      </div>
+
       {payments.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-gray-500">
@@ -108,9 +135,12 @@ export default function TenantPaymentsPage({ params }: { params: Promise<{ id: s
                         <label className="text-xs text-gray-500 block mb-1">סכום ששולם (₪)</label>
                         <Input type="number" value={editAmount} onChange={e => setEditAmount(Number(e.target.value))} className="w-24" />
                       </div>
-                      <div>
+                      <div className="w-40">
                         <label className="text-xs text-gray-500 block mb-1">תאריך תשלום</label>
-                        <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                        <HebrewDatePicker 
+                          selected={editDate ? new Date(editDate) : null} 
+                          onChange={(d) => setEditDate(d ? d.toISOString().split('T')[0] : '')} 
+                        />
                       </div>
                       <div className="pt-5 flex gap-2">
                         <button onClick={() => handleSave(p)} className="bg-green-600 hover:bg-green-700 text-white p-2 rounded"><Check className="w-4 h-4" /></button>
@@ -124,8 +154,8 @@ export default function TenantPaymentsPage({ params }: { params: Promise<{ id: s
                         <p className="text-sm text-gray-500">שולם ב-{new Date(p.paidDate).toLocaleDateString('he-IL')}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => handleEdit(p)} className="text-gray-400 hover:text-blue-600 text-sm">ערוך</button>
-                        <button onClick={() => handleDelete(p.id!)} className="text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleEdit(p)} className="text-gray-400 hover:text-blue-600" title="ערוך"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(p.id!)} className="text-gray-400 hover:text-red-600" title="מחק"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   )}

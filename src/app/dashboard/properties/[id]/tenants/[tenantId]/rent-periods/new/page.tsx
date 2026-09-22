@@ -8,6 +8,8 @@ import { RentPeriod } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SmartUploadHeader } from "@/components/SmartUploadHeader";
+import { HebrewDatePicker } from "@/components/ui/date-picker";
 
 export default function NewRentPeriodPage() {
   const { id: propertyId, tenantId } = useParams() as { id: string, tenantId: string };
@@ -63,6 +65,8 @@ export default function NewRentPeriodPage() {
         </button>
       </div>
 
+      <SmartUploadHeader title="רוצה לדלג על הקלדה?" description="הזן את הפרטים ידנית להלן, או לחץ כאן כדי להעלות חוזה/הסכם הארכה והמערכת תמלא את הכל באופן אוטומטי!" />
+
       <Card>
         <form onSubmit={handleSubmit}>
           <CardHeader>
@@ -72,11 +76,23 @@ export default function NewRentPeriodPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">תאריך התחלה</Label>
-                <Input id="startDate" name="startDate" type="date" required value={formData.startDate} onChange={handleChange} />
+                <HebrewDatePicker 
+                  id="startDate"
+                  name="startDate"
+                  required
+                  selected={formData.startDate ? new Date(formData.startDate) : null}
+                  onChange={(d) => setFormData({...formData, startDate: d ? d.toISOString().split('T')[0] : ''})}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endDate">תאריך סיום</Label>
-                <Input id="endDate" name="endDate" type="date" required value={formData.endDate} onChange={handleChange} />
+                <HebrewDatePicker 
+                  id="endDate"
+                  name="endDate"
+                  required
+                  selected={formData.endDate ? new Date(formData.endDate) : null}
+                  onChange={(d) => setFormData({...formData, endDate: d ? d.toISOString().split('T')[0] : ''})}
+                />
               </div>
             </div>
 
@@ -94,7 +110,12 @@ export default function NewRentPeriodPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="renewalDeadline">תאריך יעד לחידוש אופציה (אופציונלי)</Label>
-                <Input id="renewalDeadline" name="renewalDeadline" type="date" value={formData.renewalDeadline} onChange={handleChange} />
+                <HebrewDatePicker 
+                  id="renewalDeadline"
+                  name="renewalDeadline"
+                  selected={formData.renewalDeadline ? new Date(formData.renewalDeadline) : null}
+                  onChange={(d) => setFormData({...formData, renewalDeadline: d ? d.toISOString().split('T')[0] : ''})}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="renewalTerms">תנאי חידוש / הודעה מראש (אופציונלי)</Label>
