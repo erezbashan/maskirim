@@ -36,7 +36,7 @@ export default function PropertyExpensesPage() {
 
   const handleDeleteExpense = async (expenseId: string, receiptUrl?: string) => {
     if (confirm("האם למחוק הוצאה זו?")) {
-      await deleteExpense(id, expenseId, receiptUrl);
+      await deleteExpense(expenseId);
       setExpenses(prev => prev.filter(e => e.id !== expenseId));
     }
   };

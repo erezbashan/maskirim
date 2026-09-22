@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { collection, query, where, getDocs, doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { Property, RentPeriod, Expense, Tenant } from "@/lib/types";
+import { Property, RentPeriod, Expense, Tenant, RentPayment } from "@/lib/types";
 import { simulateTaxes, TaxSimulationResult } from "@/lib/tax-calculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
