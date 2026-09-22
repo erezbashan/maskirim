@@ -22,6 +22,10 @@ export default function TenantPaymentsPage({ params }: { params: Promise<{ id: s
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<number>(0);
   const [editDate, setEditDate] = useState<string>("");
+  
+  const [isAdding, setIsAdding] = useState(false);
+  const [newAmount, setNewAmount] = useState<number | "">("");
+  const [newDate, setNewDate] = useState<string>(new Date().toISOString().split("T")[0]);
 
   const fetchPayments = async () => {
     if (!user) return;
@@ -75,6 +79,29 @@ export default function TenantPaymentsPage({ params }: { params: Promise<{ id: s
     }
   };
 
+  const handleAddSave = async () => {
+    if (!user || !newAmount || !newDate) return;
+    try {
+      await addRentPayment({
+        userId: user.uid,
+        propertyId: id,
+        tenantId: tenantId,
+        rentPeriodId: payments[0]?.rentPeriodId || 'manual', // Fallback to 'manual' if no period exists
+        expectedDate: newDate,
+        paidDate: new Date(newDate).toISOString(),
+        amount: Number(newAmount),
+        status: 'PAID'
+      });
+      setIsAdding(false);
+      setNewAmount("");
+      setNewDate(new Date().toISOString().split("T")[0]);
+      fetchPayments();
+    } catch (err) {
+      console.error(err);
+      alert("שגיאה בהוספת התשלום");
+    }
+  };
+
   if (loading) return <div>טוען תשלומים...</div>;
 
   return (
@@ -89,28 +116,39 @@ export default function TenantPaymentsPage({ params }: { params: Promise<{ id: s
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold">תשלומים רשומים</h3>
         <button 
-          onClick={() => {
-            const amt = prompt("הכנס סכום (₪):");
-            if (!amt) return;
-            const dt = prompt("הכנס תאריך (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-            if (!dt) return;
-            // A simple prompt-based addition for now, or just use the DB function
-            addRentPayment({
-              userId: user!.uid,
-              propertyId: id,
-              tenantId: tenantId,
-              rentPeriodId: payments[0]?.rentPeriodId || 'manual',
-              expectedDate: dt,
-              paidDate: new Date(dt).toISOString(),
-              amount: Number(amt),
-              status: 'PAID'
-            }).then(() => fetchPayments());
-          }}
+          onClick={() => setIsAdding(!isAdding)}
           className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
         >
-          + תשלום ידני
+          {isAdding ? "ביטול" : "+ תשלום ידני"}
         </button>
       </div>
+
+      {isAdding && (
+        <Card className="mb-4 bg-green-50/50 border-green-200">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-1 w-full">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">סכום (₪)</label>
+              <Input type="number" placeholder="הכנס סכום" value={newAmount} onChange={e => setNewAmount(e.target.value === "" ? "" : Number(e.target.value))} />
+            </div>
+            <div className="flex-1 w-full">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">תאריך תשלום</label>
+              <HebrewDatePicker 
+                selected={newDate ? new Date(newDate) : null} 
+                onChange={(d) => setNewDate(d ? d.toISOString().split('T')[0] : '')} 
+              />
+            </div>
+            <div className="pt-6">
+              <button 
+                onClick={handleAddSave}
+                disabled={newAmount === "" || !newDate}
+                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded text-sm font-medium transition whitespace-nowrap"
+              >
+                שמור תשלום
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {payments.length === 0 ? (
         <Card>
