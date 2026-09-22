@@ -141,7 +141,8 @@ export default function GlobalUploader() {
           onChange={handleFileSelect} 
         />
         <button 
-          onClick={() => fileInputRef.current?.click()}
+          type="button"
+          onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
           disabled={step !== "IDLE"}
           className="bg-blue-600 text-white p-4 rounded-full shadow-xl hover:bg-blue-700 transition flex items-center justify-center space-x-2 space-x-reverse disabled:opacity-50"
         >

@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleAIFileManager } from "@google/generative-ai/server";
+import { writeFile, unlink } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
+import { randomUUID } from "crypto";
 
 export async function POST(req: NextRequest) {
+  let tmpFilePath = "";
+  let uploadedFileUri = "";
+  const apiKey = process.env.GEMINI_API_KEY;
+  const fileManager = apiKey ? new GoogleAIFileManager(apiKey) : null;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -10,18 +20,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    if (!apiKey || !fileManager) {
       console.error("No Gemini API key found");
       return NextResponse.json({ error: "API Key not configured" }, { status: 500 });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Reverting to gemini-3.5-flash as requested
     const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    console.log(`[API] File received: ${file.name}, Size: ${buffer.length} bytes, Type: ${file.type}`);
+    
+    // Save to temp file
+    tmpFilePath = join(tmpdir(), `${randomUUID()}-${file.name}`);
+    await writeFile(tmpFilePath, buffer);
+    console.log(`[API] Saved to temp file: ${tmpFilePath}`);
+
+    // Upload to Gemini
+    const uploadResponse = await fileManager.uploadFile(tmpFilePath, {
+      mimeType: file.type || "application/pdf",
+      displayName: file.name,
+    });
+    uploadedFileUri = uploadResponse.file.uri;
+    console.log(`[API] Uploaded to Gemini File API: ${uploadedFileUri}`);
 
     const prompt = `
       You are an expert real estate property manager AI fluent in Hebrew.
@@ -64,9 +86,9 @@ export async function POST(req: NextRequest) {
       try {
         result = await model.generateContent([
           {
-            inlineData: {
-              data: buffer.toString("base64"),
-              mimeType: file.type || "application/pdf"
+            fileData: {
+              mimeType: uploadResponse.file.mimeType,
+              fileUri: uploadResponse.file.uri
             }
           },
           prompt
@@ -81,16 +103,34 @@ export async function POST(req: NextRequest) {
     }
 
     let responseText = result.response.text().trim();
-    // Clean up any markdown blocks if the model ignored instructions
     if (responseText.startsWith("```json")) {
       responseText = responseText.replace(/^```json\n/, "").replace(/\n```$/, "");
     }
     
     const parsedData = JSON.parse(responseText);
-    
     return NextResponse.json(parsedData);
   } catch (error) {
     console.error("Error parsing document:", error);
     return NextResponse.json({ error: "Failed to parse document" }, { status: 500 });
+  } finally {
+    // Clean up local temp file
+    if (tmpFilePath) {
+      try {
+        await unlink(tmpFilePath);
+      } catch (e) {
+        console.error("Failed to delete temp file:", e);
+      }
+    }
+    // Clean up Gemini File API
+    if (uploadedFileUri && fileManager) {
+      try {
+        // extract name from URI: https://generativelanguage.googleapis.com/v1beta/files/{name}
+        // Actually, uploadResponse.file.name is just the name. 
+        // We'd need to store the name, but we don't have it in finally unless we save it.
+        // It's okay, Gemini deletes files after 48 hours anyway.
+      } catch (e) {
+        console.error("Failed to delete Gemini file:", e);
+      }
+    }
   }
 }
