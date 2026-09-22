@@ -238,7 +238,7 @@ export default function GlobalUploader() {
         rentPeriodId: targetRentPeriodId,
         name: docName,
         url: fileUrl,
-        type: (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") ? "LEASE" : parsedData.documentType === "EXPENSE" ? "EXPENSE" : "OTHER",
+        type: parsedData.documentType,
         createdAt: (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") && parsedData.otherInfo?.date ? new Date(parsedData.otherInfo.date).toISOString() : new Date().toISOString()
       };
 

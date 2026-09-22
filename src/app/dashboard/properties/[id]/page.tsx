@@ -23,6 +23,7 @@ export default function PropertyDetailsPage() {
   const [documents, setDocuments] = useState<AppDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedTenants, setExpandedTenants] = useState<Record<string, boolean>>({});
+  const [expandedExpenses, setExpandedExpenses] = useState(false);
 
   const toggleTenantExpanded = (tenantId: string) => {
     setExpandedTenants(prev => ({ ...prev, [tenantId]: !prev[tenantId] }));
@@ -154,14 +155,27 @@ export default function PropertyDetailsPage() {
               <p className="text-gray-500">אין שוכרים רשומים.</p>
             ) : (
               <div className="space-y-6">
-                {sortedTenants.map(tenant => (
+                {sortedTenants.map(tenant => {
+                  const firstPeriod = rentPeriodsByTenant[tenant.id!] && rentPeriodsByTenant[tenant.id!].length > 0
+                    ? [...rentPeriodsByTenant[tenant.id!]].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0]
+                    : null;
+                  const originalLeaseUrl = firstPeriod?.documentUrl;
+
+                  return (
                   <div key={tenant.id} className="border rounded-lg shadow-sm overflow-hidden">
                     <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
                       <div>
-                        <h3 className="font-bold text-lg">{tenant.name}</h3>
+                        <div className="flex items-center space-x-3 space-x-reverse">
+                          <h3 className="font-bold text-lg">{tenant.name}</h3>
+                          {originalLeaseUrl && (
+                            <a href={originalLeaseUrl} target="_blank" rel="noreferrer" className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">
+                              📄 חוזה מקורי
+                            </a>
+                          )}
+                        </div>
                         {tenant.paymentDueDay && <p className="text-sm text-gray-600">יום תשלום: ה-{tenant.paymentDueDay} בחודש</p>}
                       </div>
-                      <div className="flex space-x-3 space-x-reverse">
+                      <div className="flex space-x-3 space-x-reverse items-center">
                         <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/edit`} className="text-gray-500 hover:text-blue-600 transition" title="ערוך שוכר">
                           <Pencil className="w-5 h-5" />
                         </Link>
@@ -224,7 +238,8 @@ export default function PropertyDetailsPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
             )}
           </CardContent>
@@ -240,7 +255,10 @@ export default function PropertyDetailsPage() {
               <p className="text-gray-500">אין הוצאות רשומות</p>
             ) : (
               <div className="space-y-4">
-                {[...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((expense) => (
+                {[...expenses]
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, expandedExpenses ? undefined : 3)
+                  .map((expense) => (
                   <div key={expense.id} className="p-4 border rounded shadow-sm">
                     <p><strong>תאריך:</strong> {new Date(expense.date).toLocaleDateString('he-IL')}</p>
                     <p><strong>סכום:</strong> ₪{expense.amount}</p>
@@ -250,6 +268,14 @@ export default function PropertyDetailsPage() {
                     )}
                   </div>
                 ))}
+                {expenses.length > 3 && (
+                  <button 
+                    onClick={() => setExpandedExpenses(!expandedExpenses)}
+                    className="text-sm text-blue-600 hover:underline w-full text-center py-2 bg-blue-50 rounded"
+                  >
+                    {expandedExpenses ? "הסתר הוצאות ישנות" : `הצג את כל ההוצאות (${expenses.length})`}
+                  </button>
+                )}
               </div>
             )}
           </CardContent>
@@ -257,25 +283,43 @@ export default function PropertyDetailsPage() {
 
         {/* Documents List */}
         <Card>
-          <CardHeader>
-            <CardTitle>מסמכים סרוקים</CardTitle>
+          <CardHeader className="flex flex-row justify-between items-center">
+            <CardTitle>מסמכים סרוקים (5 אחרונים)</CardTitle>
+            <Link 
+              href={`/dashboard/properties/${id}/documents`}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              לכל המסמכים
+            </Link>
           </CardHeader>
           <CardContent>
             {documents.length === 0 ? (
               <p className="text-gray-500">אין מסמכים מצורפים לנכס זה</p>
             ) : (
               <div className="space-y-2">
-                {[...documents].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((doc) => (
-                  <div key={doc.id} className="p-3 border rounded shadow-sm flex justify-between items-center bg-gray-50">
-                    <div>
-                      <p className="font-semibold text-gray-800">{doc.name}</p>
-                      <p className="text-xs text-gray-500">סוג: {doc.type} | תאריך: {new Date(doc.createdAt).toLocaleDateString('he-IL')}</p>
+                {[...documents]
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .slice(0, 5)
+                  .map((doc) => {
+                    const typeTranslations: Record<string, string> = {
+                      "LEASE": "חוזה שכירות",
+                      "EXTENSION": "הארכת שכירות",
+                      "EXPENSE": "הוצאה / קבלה",
+                      "ID_CARD": "תעודה מזהה",
+                      "OTHER": "מסמך כללי"
+                    };
+                    const displayType = typeTranslations[doc.type] || doc.type;
+
+                    return (
+                    <div key={doc.id} className="p-3 border rounded shadow-sm bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <a href={doc.url} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 hover:underline">
+                          {doc.name}
+                        </a>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">סוג: {displayType} | הועלה ב: {new Date(doc.createdAt).toLocaleDateString('he-IL')}</p>
                     </div>
-                    <a href={doc.url} target="_blank" rel="noreferrer" className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">
-                      צפה במסמך
-                    </a>
-                  </div>
-                ))}
+                  )})}
               </div>
             )}
           </CardContent>
