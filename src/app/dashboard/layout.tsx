@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           
           <div className="pt-4 mt-4 border-t border-gray-100">
             <a 
-              href={`mailto:erez.bashan@gmail.com?subject=Feedback%20on%20Property%20Manager&body=URL:%20${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}%0A%0AFeedback:%20`}
+              href={`mailto:erez.bashan@gmail.com?subject=${encodeURIComponent('משוב על מערכת ניהול נכסים')}&body=${encodeURIComponent('כתובת עמוד: ')}${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}%0A%0A${encodeURIComponent('המשוב שלי: ')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block px-4 py-2 rounded text-gray-600 hover:bg-gray-100 text-sm"
