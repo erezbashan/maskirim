@@ -216,7 +216,7 @@ export default function TaxesPage() {
               </select>
             </div>
             <div className="flex flex-col space-y-1.5">
-              <Label className="text-lg font-semibold">בחר בעלים (נישום)</Label>
+              <Label className="text-lg font-semibold">בעלים (נישום)</Label>
               <select 
                 className="w-full border rounded-md p-3 bg-gray-50 font-medium"
                 value={selectedOwner}
@@ -263,7 +263,7 @@ export default function TaxesPage() {
         <div className="bg-orange-50 border-orange-200 border text-orange-800 p-4 rounded-lg flex flex-col gap-2">
           <strong>שים לב: הנתונים חסרים ולא ניתן להציג סימולציה.</strong>
           <ul className="list-disc list-inside space-y-1 text-sm">
-            {missingPropertyData && <li>חובה להזין &quot;עלות נכס&quot; ו-&quot;עלות מימון שנתית&quot; בטבלת הנכסים למטה כדי לחשב את המסלול הפירותי. הנתונים נשמרים אוטומטית בעת ההזנה.</li>}
+            {missingPropertyData && <li>חובה להזין &quot;עלות נכס&quot; ו-&quot;הוצאות מימון&quot; בטבלת הנכסים למטה כדי לחשב את המסלול הפירותי. הנתונים נשמרים אוטומטית בעת ההזנה.</li>}
             {hasUnconfirmedIncome && <li>ישנם נכסים ללא הכנסות משכירות עבור שנה זו. סמנו V בטבלה לאישור שההכנסה אכן 0.</li>}
             {hasUnconfirmedExpenses && <li>ישנם נכסים ללא הוצאות רשומות עבור שנה זו. סמנו V בטבלה לאישור שאין הוצאות.</li>}
           </ul>
@@ -271,7 +271,7 @@ export default function TaxesPage() {
       )}
 
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">נתוני נכסים לחישוב</h2>
+        
         
         <div className="bg-white rounded-lg shadow border overflow-visible">
           <div className="overflow-x-auto overflow-y-visible">
@@ -281,16 +281,16 @@ export default function TaxesPage() {
                   <th className="p-4 font-semibold w-1/4">נכס</th>
                   <th className="p-4 font-semibold">
                     <div className="flex items-center gap-1">
-                      הכנסות ({selectedYear})
+                      הכנסות
                       <InfoPopup title="הכנסות (שכירות)" content="מחושב אוטומטית לפי מספר החודשים בהם חוזה השכירות היה פעיל בשנת המס הנבחרת." />
                     </div>
                   </th>
                   <th className="p-4 font-semibold">
-                    הוצאות ({selectedYear})
+                    הוצאות
                   </th>
                   <th className="p-4 font-semibold">
                     <div className="flex items-center gap-1">
-                      עלות נכס (₪) <span className="text-red-500">*</span>
+                      עלות נכס <span className="text-red-500">*</span>
                       <InfoPopup title="עלות נכס רשומה" content="עלות רכישת הנכס המקורית. נדרש לחישוב הפחת במסלול השולי." />
                     </div>
                   </th>
@@ -301,8 +301,11 @@ export default function TaxesPage() {
                     </div>
                   </th>
                   <th className="p-4 font-semibold">
+                    פחת
+                  </th>
+                  <th className="p-4 font-semibold">
                     <div className="flex items-center gap-1">
-                      עלות מימון שנתית <span className="text-red-500">*</span>
+                      הוצאות מימון <span className="text-red-500">*</span>
                       <InfoPopup title="הוצאות מימון (משכנתא)" content="סך רכיב הריבית וההצמדה (ללא הקרן) ששולם על המשכנתא בשנת המס. הזינו 0 אם אין." />
                     </div>
                   </th>
@@ -353,6 +356,9 @@ export default function TaxesPage() {
                           className="w-20 h-9 bg-white"
                         />
                       </td>
+                      <td className="p-4 border-l align-top font-bold text-red-600">
+                        ₪{Math.round((prop.propertyValue || 0) * (prop.depreciationRate ?? 0.02)).toLocaleString()}
+                      </td>
                       <td className="p-4 align-top">
                         <Input 
                           type="number" 
@@ -373,34 +379,25 @@ export default function TaxesPage() {
                   </tr>
                 )}
               </tbody>
+              {propertyCalculations.length > 1 && (
+                <tfoot className="bg-gray-100 border-t-2 border-gray-300 font-bold">
+                  <tr>
+                    <td className="p-4 border-l">סה״כ</td>
+                    <td className="p-4 border-l text-blue-600">₪{Math.round(totalYearlyRent).toLocaleString()}</td>
+                    <td className="p-4 border-l text-blue-600">₪{Math.round(totalExpenses).toLocaleString()}</td>
+                    <td className="p-4 border-l"></td>
+                    <td className="p-4 border-l"></td>
+                    <td className="p-4 border-l text-red-600">₪{Math.round(totalDepreciation).toLocaleString()}</td>
+                    <td className="p-4 text-red-600">₪{Math.round(totalFinancing).toLocaleString()}</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </div>
       </div>
 
-      <Card className="bg-gray-50 border-gray-200">
-        <CardContent className="p-6">
-          <h3 className="font-bold text-lg mb-4">סיכום נתונים {selectedYear} (חישוב אוטומטי)</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-            <div>
-              <div className="text-gray-600 mb-1 font-semibold">סך הכנסות (שנתי)</div>
-              <div className="font-bold text-2xl">₪{Math.round(totalYearlyRent).toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-gray-600 mb-1 font-semibold">סך הוצאות שוטפות</div>
-              <div className="font-bold text-2xl text-red-600">₪{Math.round(totalExpenses).toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-gray-600 mb-1 font-semibold">סך הוצאות מימון</div>
-              <div className="font-bold text-2xl text-red-600">₪{Math.round(totalFinancing).toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-gray-600 mb-1 font-semibold">פחת מחושב</div>
-              <div className="font-bold text-2xl text-red-600">₪{Math.round(totalDepreciation).toLocaleString()}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      
 
       {canCalculate && (
         <div className="space-y-6 pt-4 border-t-2 border-dashed border-gray-300">
