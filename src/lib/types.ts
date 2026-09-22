@@ -61,6 +61,18 @@ export interface Document {
   createdAt: string;
 }
 
+export interface RentPayment {
+  id?: string;
+  userId: string;
+  propertyId: string;
+  tenantId: string;
+  rentPeriodId: string;
+  expectedDate: string; // YYYY-MM-DD
+  paidDate: string;     // ISO string
+  amount: number;
+  status: 'PAID';
+}
+
 export interface Reminder {
   id?: string;
   propertyId: string;

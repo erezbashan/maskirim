@@ -1,7 +1,7 @@
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "./firebase/config";
-import { Property, Tenant, RentPeriod, Expense, Reminder, Document as AppDocument } from "./types";
+import { Property, Tenant, RentPeriod, Expense, Reminder, Document as AppDocument, RentPayment } from "./types";
 
 // Properties
 export const addProperty = async (property: Property) => {
@@ -164,6 +164,18 @@ export const getExpensesByProperty = async (propertyId: string): Promise<Expense
   const q = query(collection(db, "expenses"), where("propertyId", "==", propertyId));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
+};
+
+// Rent Payments
+export const addRentPayment = async (payment: Omit<RentPayment, 'id'>) => {
+  const docRef = await addDoc(collection(db, "rentPayments"), payment);
+  return docRef.id;
+};
+
+export const getRentPaymentsByUser = async (userId: string): Promise<RentPayment[]> => {
+  const q = query(collection(db, "rentPayments"), where("userId", "==", userId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentPayment));
 };
 
 // Reminders
