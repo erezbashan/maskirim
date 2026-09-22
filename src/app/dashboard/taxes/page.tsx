@@ -328,7 +328,7 @@ export default function TaxesPage() {
                     <tr key={prop.id} className={(!prop.propertyValue || prop.yearlyFinancingCosts === undefined) ? "bg-orange-50/50" : "hover:bg-gray-50/50 transition-colors"}>
                       <td className="p-4 font-semibold text-gray-900 border-l">{prop.address}</td>
                       <td className="p-4 border-l">
-                        <Link href={`/dashboard/properties/${prop.id}/tenants`} className="font-bold text-blue-600 hover:underline block mb-1">
+                        <Link href={`/dashboard/properties/${prop.id}`} className="font-bold text-blue-600 hover:underline block mb-1">
                           ₪{propRent.toLocaleString()}
                         </Link>
                         {propRent === 0 && (
@@ -339,7 +339,7 @@ export default function TaxesPage() {
                         )}
                       </td>
                       <td className="p-4 border-l">
-                        <Link href={`/dashboard/properties/${prop.id}/expenses/new`} className="font-bold text-blue-600 hover:underline block mb-1">
+                        <Link href={`/dashboard/properties/${prop.id}`} className="font-bold text-blue-600 hover:underline block mb-1">
                           ₪{propExp.toLocaleString()}
                         </Link>
                         {propExp === 0 && (
