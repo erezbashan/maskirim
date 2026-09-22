@@ -22,6 +22,11 @@ export default function PropertyDetailsPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [documents, setDocuments] = useState<AppDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedTenants, setExpandedTenants] = useState<Record<string, boolean>>({});
+
+  const toggleTenantExpanded = (tenantId: string) => {
+    setExpandedTenants(prev => ({ ...prev, [tenantId]: !prev[tenantId] }));
+  };
 
   useEffect(() => {
     if (!user || !id) return;
@@ -113,7 +118,7 @@ export default function PropertyDetailsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>פרטי נכס</CardTitle>
@@ -124,7 +129,7 @@ export default function PropertyDetailsPage() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader className="flex flex-row justify-between items-center">
             <CardTitle>שוכרים</CardTitle>
             <Link 
@@ -167,6 +172,7 @@ export default function PropertyDetailsPage() {
                         <div className="space-y-3">
                           {[...rentPeriodsByTenant[tenant.id!]]
                             .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+                            .slice(0, expandedTenants[tenant.id!] ? undefined : 1)
                             .map(period => (
                             <div key={period.id} className="border p-3 rounded text-sm relative">
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
@@ -194,6 +200,16 @@ export default function PropertyDetailsPage() {
                               </div>
                             </div>
                           ))}
+                          {rentPeriodsByTenant[tenant.id!].length > 1 && (
+                            <button 
+                              onClick={() => toggleTenantExpanded(tenant.id!)}
+                              className="text-sm text-blue-600 hover:underline w-full text-center py-2 bg-blue-50 rounded"
+                            >
+                              {expandedTenants[tenant.id!] 
+                                ? "הסתר היסטוריית שכירות" 
+                                : `הצג היסטוריית שכירות (${rentPeriodsByTenant[tenant.id!].length - 1} קודמות)`}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -205,7 +221,7 @@ export default function PropertyDetailsPage() {
         </Card>
 
         {/* Expenses List */}
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle>הוצאות אחרונות</CardTitle>
           </CardHeader>
@@ -230,7 +246,7 @@ export default function PropertyDetailsPage() {
         </Card>
 
         {/* Documents List */}
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle>מסמכים סרוקים</CardTitle>
           </CardHeader>
