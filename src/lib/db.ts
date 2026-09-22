@@ -1,5 +1,5 @@
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "./firebase/config";
 import { Property, Tenant, RentPeriod, Expense, Reminder, Document as AppDocument } from "./types";
 
@@ -54,8 +54,49 @@ export const getDocumentsByProperty = async (propertyId: string): Promise<AppDoc
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppDocument));
 };
 
+const safelyDeleteStorageUrl = async (url: string | undefined) => {
+  if (!url) return;
+  try {
+    const fileRef = ref(storage, url);
+    await deleteObject(fileRef);
+  } catch (err) {
+    console.error("Failed to delete file from storage:", url, err);
+  }
+};
+
 export const deleteProperty = async (id: string) => {
+  // 1. Delete all expenses and their files
+  const expenses = await getExpensesByProperty(id);
+  for (const exp of expenses) {
+    await safelyDeleteStorageUrl(exp.receiptUrl);
+    if (exp.id) await deleteDoc(doc(db, "expenses", exp.id));
+  }
+
+  // 2. Delete all documents directly attached to the property
+  const docs = await getDocumentsByProperty(id);
+  for (const d of docs) {
+    await safelyDeleteStorageUrl(d.url);
+    if (d.id) await deleteDoc(doc(db, "documents", d.id));
+  }
+
+  // 3. Delete all tenants and their rent periods
+  const tenants = await getTenantsByProperty(id);
+  for (const t of tenants) {
+    if (t.id) await deleteTenant(t.id);
+  }
+
+  // Finally, delete the property itself
   await deleteDoc(doc(db, "properties", id));
+};
+
+export const deleteTenant = async (id: string) => {
+  // Delete all rent periods and their files
+  const periods = await getRentPeriodsByTenant(id);
+  for (const p of periods) {
+    await safelyDeleteStorageUrl(p.documentUrl);
+    if (p.id) await deleteDoc(doc(db, "rentPeriods", p.id));
+  }
+  await deleteDoc(doc(db, "tenants", id));
 };
 
 // Tenants
@@ -90,6 +131,11 @@ export const getRentPeriodsByTenant = async (tenantId: string): Promise<RentPeri
   const q = query(collection(db, "rentPeriods"), where("tenantId", "==", tenantId));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentPeriod));
+};
+
+export const deleteRentPeriod = async (id: string, documentUrl?: string) => {
+  await safelyDeleteStorageUrl(documentUrl);
+  await deleteDoc(doc(db, "rentPeriods", id));
 };
 
 // Expenses

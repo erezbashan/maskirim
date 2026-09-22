@@ -13,9 +13,6 @@ export default function NewPropertyPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [parsing, setParsing] = useState(false);
-  const [showManualForm, setShowManualForm] = useState(false);
-  const [fileSelected, setFileSelected] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     ownerName: "",
@@ -26,48 +23,6 @@ export default function NewPropertyPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFileSelected(e.target.files[0]);
-    }
-  };
-
-  const handleUploadSubmit = async () => {
-    if (!fileSelected) return;
-    
-    setParsing(true);
-    try {
-      const data = new FormData();
-      data.append("file", fileSelected);
-
-      const res = await fetch("/api/parse-lease", {
-        method: "POST",
-        body: data,
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to parse document");
-      }
-
-      const parsedData = await res.json();
-      
-      setFormData({
-        ownerName: parsedData.ownerName || "",
-        address: parsedData.address || "",
-        city: parsedData.city || "",
-        notes: `שוכר: ${parsedData.tenantName || ''}\nשכירות: ${parsedData.monthlyRent || ''}\nתאריכים: ${parsedData.startDate || ''} עד ${parsedData.endDate || ''}\n${parsedData.notes || ''}`,
-      });
-
-      setShowManualForm(true);
-    } catch (err) {
-      console.error(err);
-      alert("אירעה שגיאה בפענוח המסמך. אנא הזן את הפרטים ידנית.");
-      setShowManualForm(true);
-    } finally {
-      setParsing(false);
-    }
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
@@ -99,50 +54,18 @@ export default function NewPropertyPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       
-      {/* Upload Section - Primary */}
       <Card className="border-blue-200 shadow-md">
         <CardHeader className="bg-blue-50/50 border-b">
           <CardTitle className="text-2xl text-blue-800">הוספת נכס חדש</CardTitle>
           <CardDescription>
-            הדרך המהירה ביותר להוסיף נכס היא להעלות את חוזה השכירות. המערכת תפענח אותו אוטומטית בעזרת בינה מלאכותית.
+            הזן את פרטי הנכס ידנית להלן, או השתמש <b>בתיבה החכמה</b> בתחתית המסך כדי להעלות חוזה והמערכת תקים את הנכס, השוכר, ותקופת השכירות באופן אוטומטי!
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-6 space-y-4">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-10 text-center hover:bg-gray-50 transition">
-            <Label htmlFor="lease-upload" className="cursor-pointer flex flex-col items-center">
-              <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-              <span className="text-blue-600 font-medium">בחר קובץ חוזה (PDF או תמונה)</span>
-              <span className="text-sm text-gray-500 mt-1">{fileSelected ? fileSelected.name : "לחץ להעלאה"}</span>
-            </Label>
-            <input id="lease-upload" type="file" className="hidden" accept=".pdf,image/*" onChange={handleFileUpload} />
-          </div>
-          
-          <div className="flex justify-between items-center mt-4">
-            <button 
-              type="button"
-              onClick={() => setShowManualForm(true)}
-              className="text-blue-700 font-semibold hover:underline text-lg"
-            >
-              הזנה ידנית
-            </button>
-            <button 
-              type="button"
-              onClick={handleUploadSubmit}
-              disabled={!fileSelected || parsing}
-              className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 disabled:opacity-50"
-            >
-              {parsing ? "מפענח..." : "העלה ופענח חוזה"}
-            </button>
-          </div>
-        </CardContent>
       </Card>
-
-      {/* Manual Entry Section */}
-      {showManualForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">פרטי נכס</CardTitle>
-          </CardHeader>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">פרטי נכס</CardTitle>
+        </CardHeader>
           <form onSubmit={handleManualSubmit}>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -190,7 +113,6 @@ export default function NewPropertyPage() {
             </CardFooter>
           </form>
         </Card>
-      )}
     </div>
   );
 }
