@@ -57,35 +57,43 @@ export default function GlobalUploader() {
       getPropertiesByUser(user.uid).then(fetchedProps => {
         setProperties(fetchedProps);
         if (parsedData?.propertyInfo?.address) {
-          const match = fetchedProps.find(p => calculateSimilarity(p.address, parsedData.propertyInfo.address) >= 0.75);
+          const match = fetchedProps.find(p => calculateSimilarity(p.address, parsedData.propertyInfo.address!) >= 0.75);
           if (match && match.id) {
             setSelectedPropertyId(match.id);
           }
         }
       }).catch(console.error);
     }
-  }, [user, step, parsedData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, step]);
 
   useEffect(() => {
     if (selectedPropertyId !== "NEW" && selectedPropertyId !== "UNKNOWN" && selectedPropertyId !== "") {
       getTenantsByProperty(selectedPropertyId).then(fetchedTenants => {
         setTenants(fetchedTenants);
+        
+        let bestMatch = "";
         if (parsedData?.tenantInfo?.name) {
-          const match = fetchedTenants.find(t => calculateSimilarity(t.name, parsedData.tenantInfo.name) >= 0.75);
-          if (match && match.id) {
-            setSelectedTenantId(match.id);
-          } else {
-            setSelectedTenantId("");
-          }
-        } else {
-          setSelectedTenantId("");
+          const match = fetchedTenants.find(t => calculateSimilarity(t.name, parsedData.tenantInfo.name!) >= 0.75);
+          if (match && match.id) bestMatch = match.id;
         }
+
+        setSelectedTenantId(prev => {
+          if (prev !== "" && prev !== "NEW" && fetchedTenants.some(t => t.id === prev)) {
+            return prev;
+          }
+          if (prev === "NEW") {
+            return prev; // keep the intention to create a new tenant if they had it
+          }
+          return bestMatch;
+        });
       }).catch(console.error);
     } else {
       setTenants([]);
-      setSelectedTenantId("");
+      setSelectedTenantId(selectedPropertyId === "NEW" ? "NEW" : "");
     }
-  }, [selectedPropertyId, parsedData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPropertyId]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
