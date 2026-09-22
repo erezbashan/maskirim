@@ -41,6 +41,20 @@ function InfoPopup({ title, content }: { title: string, content: string }) {
   );
 }
 
+function getMonthsActiveInYear(startDateStr: string, endDateStr: string, year: number) {
+  if (!startDateStr || !endDateStr) return 0;
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  let months = 0;
+  for (let m = 0; m < 12; m++) {
+      const checkDate = new Date(year, m, 15);
+      if (checkDate >= start && checkDate <= end) {
+          months++;
+      }
+  }
+  return months;
+}
+
 export default function TaxesPage() {
   const { user } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -56,8 +70,8 @@ export default function TaxesPage() {
   
   const [marginalTaxRate, setMarginalTaxRate] = useState<number>(31);
   const [previousLosses, setPreviousLosses] = useState<number>(0);
-  const [incomeConfirmedZero, setIncomeConfirmedZero] = useState(false);
-  const [expensesConfirmedZero, setExpensesConfirmedZero] = useState(false);
+  
+  const [zeroConfirmations, setZeroConfirmations] = useState<Record<string, { income?: boolean, expenses?: boolean }>>({});
   
   const [loading, setLoading] = useState(true);
 
@@ -102,13 +116,11 @@ export default function TaxesPage() {
         const data = snap.data();
         setMarginalTaxRate(data.marginalTaxRate ?? 31);
         setPreviousLosses(data.previousLosses ?? 0);
-        setIncomeConfirmedZero(data.incomeConfirmedZero ?? false);
-        setExpensesConfirmedZero(data.expensesConfirmedZero ?? false);
+        setZeroConfirmations(data.zeroConfirmations || {});
       } else {
         setMarginalTaxRate(31);
         setPreviousLosses(0);
-        setIncomeConfirmedZero(false);
-        setExpensesConfirmedZero(false);
+        setZeroConfirmations({});
       }
     };
     fetchSettings();
@@ -118,6 +130,14 @@ export default function TaxesPage() {
     if (!user || !selectedOwner || !selectedYear) return;
     const docRef = doc(db, "taxSettings", `${user.uid}_${selectedOwner}_${selectedYear}`);
     await setDoc(docRef, updates, { merge: true });
+  };
+
+  const handleZeroConfirmation = (propId: string, type: 'income' | 'expenses', checked: boolean) => {
+    setZeroConfirmations(prev => {
+      const next = { ...prev, [propId]: { ...(prev[propId] || {}), [type]: checked } };
+      saveSettings({ zeroConfirmations: next });
+      return next;
+    });
   };
 
   const handleUpdateProperty = async (propId: string, field: string, value: number) => {
@@ -135,26 +155,34 @@ export default function TaxesPage() {
   // Check for missing mandatory property fields
   const missingPropertyData = ownerProps.some(p => !p.propertyValue || p.yearlyFinancingCosts === undefined || p.yearlyFinancingCosts === null);
 
-  // Aggregations for Selected Year
-  let totalYearlyRent = 0;
-  rentPeriods.forEach(rp => {
-    const tenant = tenants.find(t => t.id === rp.tenantId);
-    if (tenant && ownerPropIds.includes(tenant.propertyId)) {
-      // In a real system, we'd calculate overlap days with selectedYear.
-      // For the simulator MVP, we assume active periods represent the yearly run rate.
-      totalYearlyRent += (rp.monthlyRent || 0) * 12;
-    }
-  });
+  // Unconfirmed zeroes
+  let hasUnconfirmedIncome = false;
+  let hasUnconfirmedExpenses = false;
 
-  const totalExpenses = expenses
-    .filter(e => ownerPropIds.includes(e.propertyId) && e.date.startsWith(selectedYear.toString()))
-    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  let totalYearlyRent = 0;
+  let totalExpenses = 0;
+
+  const propertyCalculations = ownerProps.map(prop => {
+    const propRentPeriods = rentPeriods.filter(rp => tenants.find(t => t.id === rp.tenantId)?.propertyId === prop.id);
+    const propRent = propRentPeriods.reduce((sum, rp) => {
+      const activeMonths = getMonthsActiveInYear(rp.startDate, rp.endDate, selectedYear);
+      return sum + ((rp.monthlyRent || 0) * activeMonths);
+    }, 0);
+    
+    const propExpList = expenses.filter(e => e.propertyId === prop.id && e.date.startsWith(selectedYear.toString()));
+    const propExp = propExpList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    if (propRent === 0 && !zeroConfirmations[prop.id!]?.income) hasUnconfirmedIncome = true;
+    if (propExp === 0 && !zeroConfirmations[prop.id!]?.expenses) hasUnconfirmedExpenses = true;
+
+    totalYearlyRent += propRent;
+    totalExpenses += propExp;
+
+    return { prop, propRent, propExp };
+  });
 
   const totalDepreciation = ownerProps.reduce((sum, p) => sum + ((p.propertyValue || 0) * (p.depreciationRate ?? 0.02)), 0);
   const totalFinancing = ownerProps.reduce((sum, p) => sum + (p.yearlyFinancingCosts || 0), 0);
-
-  const needsIncomeConfirmation = totalYearlyRent === 0 && !incomeConfirmedZero;
-  const needsExpensesConfirmation = totalExpenses === 0 && !expensesConfirmedZero;
 
   const ceiling = YEAR_CEILINGS[selectedYear] || 5654;
 
@@ -168,7 +196,7 @@ export default function TaxesPage() {
     exemptionCeilingMonthly: ceiling,
   });
 
-  const canCalculate = !missingPropertyData && !needsIncomeConfirmation && !needsExpensesConfirmation;
+  const canCalculate = !missingPropertyData && !hasUnconfirmedIncome && !hasUnconfirmedExpenses;
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8" dir="rtl">
@@ -249,85 +277,118 @@ export default function TaxesPage() {
         <div className="bg-orange-50 border-orange-200 border text-orange-800 p-4 rounded-lg flex flex-col gap-2">
           <strong>שים לב: הנתונים חסרים ולא ניתן להציג סימולציה.</strong>
           <ul className="list-disc list-inside space-y-1 text-sm">
-            {missingPropertyData && <li>חובה להזין &quot;עלות נכס&quot; ו-&quot;עלות מימון שנתית&quot; (אפילו 0) לכל הנכסים כדי לחשב את המסלול הפירותי. הנתונים נשמרים אוטומטית בעת ההזנה.</li>}
-            {needsIncomeConfirmation && <li>לא נמצאו הכנסות עבור שנה זו. סמנו V למטה לאישור או <Link href="/dashboard/properties" className="underline">הזינו תקופות שכירות</Link>.</li>}
-            {needsExpensesConfirmation && <li>לא נמצאו הוצאות עבור שנה זו. סמנו V למטה לאישור או הזינו הוצאות בכרטיס הנכס.</li>}
+            {missingPropertyData && <li>חובה להזין &quot;עלות נכס&quot; ו-&quot;עלות מימון שנתית&quot; בטבלת הנכסים למטה כדי לחשב את המסלול הפירותי. הנתונים נשמרים אוטומטית בעת ההזנה.</li>}
+            {hasUnconfirmedIncome && <li>ישנם נכסים ללא הכנסות משכירות עבור שנה זו. סמנו V בטבלה לאישור שההכנסה אכן 0.</li>}
+            {hasUnconfirmedExpenses && <li>ישנם נכסים ללא הוצאות רשומות עבור שנה זו. סמנו V בטבלה לאישור שאין הוצאות.</li>}
           </ul>
         </div>
       )}
 
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">נתוני נכסים לחישוב</h2>
-        <div className="grid grid-cols-1 gap-4">
-          {ownerProps.map(prop => {
-            const propRentPeriods = rentPeriods.filter(rp => tenants.find(t => t.id === rp.tenantId)?.propertyId === prop.id);
-            const propTotalYearlyRent = propRentPeriods.reduce((sum, rp) => sum + ((rp.monthlyRent || 0) * 12), 0);
-
-            const propExpenses = expenses.filter(e => e.propertyId === prop.id && e.date.startsWith(selectedYear.toString()));
-            const propTotalExpenses = propExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-
-            return (
-              <Card key={prop.id} className={`overflow-visible ${(!prop.propertyValue || prop.yearlyFinancingCosts === undefined) ? "border-orange-300" : ""}`}>
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex flex-col gap-1 min-w-[200px]">
-                      <div className="font-semibold text-lg">{prop.address}</div>
-                      <div className="text-sm text-gray-500">
-                        הכנסות ({selectedYear}): <span className="font-semibold text-gray-700">₪{propTotalYearlyRent.toLocaleString()}</span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        הוצאות ({selectedYear}): <span className="font-semibold text-gray-700">₪{propTotalExpenses.toLocaleString()}</span>
-                      </div>
+        
+        <div className="bg-white rounded-lg shadow border overflow-visible">
+          <div className="overflow-x-auto overflow-y-visible">
+            <table className="w-full text-sm text-right min-w-[800px]">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="p-4 font-semibold w-1/4">נכס</th>
+                  <th className="p-4 font-semibold">
+                    <div className="flex items-center gap-1">
+                      הכנסות ({selectedYear})
+                      <InfoPopup title="הכנסות (שכירות)" content="מחושב אוטומטית לפי מספר החודשים בהם חוזה השכירות היה פעיל בשנת המס הנבחרת." />
                     </div>
-                    <div className="flex items-center gap-4 flex-wrap flex-1 justify-end">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold flex items-center">
-                          עלות נכס (₪) <span className="text-red-500 ml-1">*</span>
-                          <InfoPopup title="עלות נכס רשומה" content="עלות רכישת הנכס המקורית (כולל מס רכישה, עו״ד, תיווך ושיפוצים צמודים). נדרש לחישוב הפחת השנתי במסלול השולי." />
-                        </Label>
+                  </th>
+                  <th className="p-4 font-semibold">
+                    הוצאות ({selectedYear})
+                  </th>
+                  <th className="p-4 font-semibold">
+                    <div className="flex items-center gap-1">
+                      עלות נכס (₪) <span className="text-red-500">*</span>
+                      <InfoPopup title="עלות נכס רשומה" content="עלות רכישת הנכס המקורית. נדרש לחישוב הפחת במסלול השולי." />
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold">
+                    <div className="flex items-center gap-1">
+                      שיעור פחת
+                      <InfoPopup title="שיעור הפחת" content="ברירת מחדל 2%. לעיתים מגיע ל-4%. התייעצו עם רואה חשבון." />
+                    </div>
+                  </th>
+                  <th className="p-4 font-semibold">
+                    <div className="flex items-center gap-1">
+                      עלות מימון שנתית <span className="text-red-500">*</span>
+                      <InfoPopup title="הוצאות מימון (משכנתא)" content="סך רכיב הריבית וההצמדה (ללא הקרן) ששולם על המשכנתא בשנת המס. הזינו 0 אם אין." />
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {propertyCalculations.map(({ prop, propRent, propExp }) => {
+                  return (
+                    <tr key={prop.id} className={(!prop.propertyValue || prop.yearlyFinancingCosts === undefined) ? "bg-orange-50/50" : "hover:bg-gray-50/50 transition-colors"}>
+                      <td className="p-4 font-semibold text-gray-900 border-l">{prop.address}</td>
+                      <td className="p-4 border-l">
+                        <Link href={`/dashboard/properties/${prop.id}/tenants`} className="font-bold text-blue-600 hover:underline block mb-1">
+                          ₪{propRent.toLocaleString()}
+                        </Link>
+                        {propRent === 0 && (
+                          <label className="flex items-center gap-1 text-xs text-orange-700 bg-orange-100 p-1 rounded cursor-pointer w-max">
+                            <input type="checkbox" checked={zeroConfirmations[prop.id!]?.income || false} onChange={(e) => handleZeroConfirmation(prop.id!, 'income', e.target.checked)} />
+                            מאשר אכן 0
+                          </label>
+                        )}
+                      </td>
+                      <td className="p-4 border-l">
+                        <Link href={`/dashboard/properties/${prop.id}/expenses/new`} className="font-bold text-blue-600 hover:underline block mb-1">
+                          ₪{propExp.toLocaleString()}
+                        </Link>
+                        {propExp === 0 && (
+                          <label className="flex items-center gap-1 text-xs text-orange-700 bg-orange-100 p-1 rounded cursor-pointer w-max">
+                            <input type="checkbox" checked={zeroConfirmations[prop.id!]?.expenses || false} onChange={(e) => handleZeroConfirmation(prop.id!, 'expenses', e.target.checked)} />
+                            מאשר אכן 0
+                          </label>
+                        )}
+                      </td>
+                      <td className="p-4 border-l align-top">
                         <Input 
                           type="number" 
                           value={prop.propertyValue ?? ""} 
                           onChange={(e) => handleUpdateProperty(prop.id!, 'propertyValue', Number(e.target.value))}
-                          className={`w-32 ${!prop.propertyValue ? 'border-orange-400 bg-orange-50' : ''}`}
+                          className={`w-28 h-9 ${!prop.propertyValue ? 'border-orange-400 bg-white' : 'bg-white'}`}
                           placeholder="חובה להזין"
                         />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold flex items-center">
-                          שיעור פחת
-                          <InfoPopup title="שיעור הפחת" content="לפי התקנות, מבנה בטון זכאי לפחת של 2% לשנה (או 1.33% מתוך שווי הכולל את הקרקע). לעיתים מגיע ל-4%. ברירת מחדל 2%. התייעצו עם רואה חשבון." />
-                        </Label>
+                      </td>
+                      <td className="p-4 border-l align-top">
                         <Input 
                           type="number" 
                           step="0.01"
                           value={prop.depreciationRate ?? 0.02} 
                           onChange={(e) => handleUpdateProperty(prop.id!, 'depreciationRate', Number(e.target.value))}
-                          className="w-32"
+                          className="w-20 h-9 bg-white"
                         />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-semibold flex items-center">
-                          עלות מימון שנתית (₪) <span className="text-red-500 ml-1">*</span>
-                          <InfoPopup title="הוצאות מימון (משכנתא)" content="סך רכיב הריבית וההצמדה (ללא הקרן) ששולם על המשכנתא עבור נכס זה בשנת המס המחושבת. אם אין משכנתא, הזינו 0." />
-                        </Label>
+                      </td>
+                      <td className="p-4 align-top">
                         <Input 
                           type="number" 
                           value={prop.yearlyFinancingCosts ?? ""} 
                           onChange={(e) => handleUpdateProperty(prop.id!, 'yearlyFinancingCosts', Number(e.target.value))}
-                          className={`w-32 ${prop.yearlyFinancingCosts === undefined ? 'border-orange-400 bg-orange-50' : ''}`}
+                          className={`w-28 h-9 ${prop.yearlyFinancingCosts === undefined ? 'border-orange-400 bg-white' : 'bg-white'}`}
                           placeholder="חובה להזין"
                         />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-          {ownerProps.length === 0 && (
-            <div className="text-gray-500 p-4 border rounded text-center">אין נכסים המשויכים לבעלים זה.</div>
-          )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {propertyCalculations.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-gray-500">
+                      אין נכסים המשויכים לבעלים זה.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -338,28 +399,10 @@ export default function TaxesPage() {
             <div>
               <div className="text-gray-600 mb-1 font-semibold">סך הכנסות (שנתי)</div>
               <div className="font-bold text-2xl">₪{Math.round(totalYearlyRent).toLocaleString()}</div>
-              {needsIncomeConfirmation && (
-                <label className="flex items-center gap-2 mt-2 text-orange-700 bg-orange-100 p-2 rounded">
-                  <input type="checkbox" onChange={(e) => {
-                    setIncomeConfirmedZero(e.target.checked);
-                    saveSettings({ incomeConfirmedZero: e.target.checked });
-                  }} />
-                  מאשר שההכנסה השנה היא 0
-                </label>
-              )}
             </div>
             <div>
-              <div className="text-gray-600 mb-1 font-semibold">הוצאות שוטפות</div>
+              <div className="text-gray-600 mb-1 font-semibold">סך הוצאות שוטפות</div>
               <div className="font-bold text-2xl text-red-600">₪{Math.round(totalExpenses).toLocaleString()}</div>
-              {needsExpensesConfirmation && (
-                <label className="flex items-center gap-2 mt-2 text-orange-700 bg-orange-100 p-2 rounded">
-                  <input type="checkbox" onChange={(e) => {
-                    setExpensesConfirmedZero(e.target.checked);
-                    saveSettings({ expensesConfirmedZero: e.target.checked });
-                  }} />
-                  מאשר שאין הוצאות השנה
-                </label>
-              )}
             </div>
             <div>
               <div className="text-gray-600 mb-1 font-semibold">סך הוצאות מימון</div>

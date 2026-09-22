@@ -39,5 +39,11 @@ service cloud.firestore {
     match /rentPayments/{paymentId} {
       allow read, write: if request.auth != null; // We can lock this down later
     }
+
+    // Tax Settings collection
+    match /taxSettings/{settingId} {
+      // settingId is structured as {uid}_{ownerName}_{year}
+      allow read, write: if request.auth != null && settingId.matches(request.auth.uid + '.*');
+    }
   }
 }
