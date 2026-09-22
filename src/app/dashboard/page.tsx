@@ -3,21 +3,50 @@
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getPropertiesByUser } from "@/lib/db";
+import { getPropertiesByUser, getTenantsByProperty, getRentPeriodsByTenant } from "@/lib/db";
 import Link from "next/link";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [propertiesCount, setPropertiesCount] = useState<number | null>(null);
+  const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
 
   useEffect(() => {
     if (user) {
-      getPropertiesByUser(user.uid).then((props) => {
+      getPropertiesByUser(user.uid).then(async (props) => {
         if (props.length === 0) {
           router.push("/dashboard/properties/new");
         } else {
           setPropertiesCount(props.length);
+          
+          let totalMonthlyIncome = 0;
+          const now = new Date();
+          now.setHours(0, 0, 0, 0);
+
+          // Fetch all tenants and their rent periods to calculate current active income
+          for (const prop of props) {
+            if (!prop.id) continue;
+            const propTenants = await getTenantsByProperty(prop.id);
+            for (const tenant of propTenants) {
+              if (!tenant.id) continue;
+              const periods = await getRentPeriodsByTenant(tenant.id);
+              
+              // Find active periods
+              const activePeriods = periods.filter(p => {
+                const start = new Date(p.startDate);
+                const end = new Date(p.endDate);
+                return now >= start && now <= end;
+              });
+
+              for (const p of activePeriods) {
+                if (p.monthlyRent) {
+                  totalMonthlyIncome += Number(p.monthlyRent);
+                }
+              }
+            }
+          }
+          setMonthlyIncome(totalMonthlyIncome);
         }
       });
     }
@@ -41,7 +70,7 @@ export default function DashboardPage() {
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-xl font-semibold mb-2">הכנסה חודשית (צפי)</h3>
-          <p className="text-3xl font-bold text-green-600">₪0</p>
+          <p className="text-3xl font-bold text-green-600">₪{monthlyIncome.toLocaleString()}</p>
         </div>
       </div>
     </div>

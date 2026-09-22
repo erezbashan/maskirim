@@ -137,16 +137,24 @@ export default function GlobalUploader() {
           setStep("REVIEW");
         } catch (err) {
           console.error(err);
-          alert("שגיאה בפענוח המסמך. אנא נסה שנית או הוסף ידנית.");
-          setStep("IDLE");
+          // Fallback to manual filing if parsing fails
+          setParsedData({
+            documentType: "OTHER",
+            otherInfo: { title: file.name, date: new Date().toISOString().split('T')[0] }
+          } as any);
+          setStep("REVIEW");
         }
         if (fileInputRef.current) fileInputRef.current.value = "";
       };
       reader.readAsDataURL(file);
     } catch (err) {
       console.error(err);
-      alert("שגיאה בפענוח המסמך. אנא נסה שנית או הוסף ידנית.");
-      setStep("IDLE");
+      // Fallback to manual filing
+      setParsedData({
+        documentType: "OTHER",
+        otherInfo: { title: file.name, date: new Date().toISOString().split('T')[0] }
+      } as any);
+      setStep("REVIEW");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -286,7 +294,6 @@ export default function GlobalUploader() {
           type="file" 
           ref={fileInputRef} 
           className="hidden" 
-          accept=".pdf,image/*" 
           onChange={handleFileSelect} 
         />
         <button 
