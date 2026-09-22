@@ -5,13 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { getRentPaymentsByProperty, getTenantsByProperty, addRentPayment } from "@/lib/db";
 import { RentPayment, Tenant } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
-import { doc, deleteDoc } from "firebase/firestore";
+import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { HebrewDatePicker } from "@/components/ui/date-picker";
-import { ArrowRight, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { ArrowRight, Trash2, Pencil, Check, X } from "lucide-react";
 
 export default function PropertyIncomePage() {
   const { id } = useParams() as { id: string };
@@ -27,6 +26,11 @@ export default function PropertyIncomePage() {
   const [newAmount, setNewAmount] = useState<number | "">("");
   const [newDate, setNewDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [selectedTenant, setSelectedTenant] = useState<string>("");
+
+  // Edit Income state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editDate, setEditDate] = useState<string>("");
 
   const fetchData = async () => {
     if (!user || !id) return;
@@ -78,6 +82,28 @@ export default function PropertyIncomePage() {
     } catch (err) {
       console.error(err);
       alert("שגיאה בהוספת ההכנסה");
+    }
+  };
+
+  const handleEdit = (p: RentPayment) => {
+    setEditingId(p.id!);
+    setEditAmount(p.amount);
+    setEditDate(p.paidDate ? p.paidDate.split("T")[0] : p.expectedDate.split("T")[0]);
+  };
+
+  const handleEditSave = async (p: RentPayment) => {
+    if (!p.id) return;
+    try {
+      const docRef = doc(db, "rentPayments", p.id);
+      await updateDoc(docRef, {
+        amount: editAmount,
+        paidDate: new Date(editDate).toISOString()
+      });
+      setEditingId(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("שגיאה בעדכון התשלום");
     }
   };
 
@@ -191,21 +217,47 @@ export default function PropertyIncomePage() {
                         {payment.tenantName}
                       </td>
                       <td className="p-3">{new Date(payment.expectedDate).toLocaleDateString('he-IL')}</td>
-                      <td className="p-3">{payment.paidDate ? new Date(payment.paidDate).toLocaleDateString('he-IL') : '-'}</td>
-                      <td className="p-3 font-bold text-green-600">₪{payment.amount.toLocaleString()}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${payment.status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {payment.status === 'PAID' ? 'שולם' : payment.status}
-                        </span>
-                      </td>
-                      <td className="p-3 flex items-center gap-3">
-                        <Link href={`/dashboard/properties/${id}/tenants/${payment.tenantId}/payments`} className="text-blue-600 hover:underline text-xs">
-                          נהל בכרטיס שוכר
-                        </Link>
-                        <button onClick={() => handleDelete(payment.id!)} className="text-red-500 hover:text-red-700 transition" title="מחק תשלום">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+                      
+                      {editingId === payment.id ? (
+                        <>
+                          <td className="p-2">
+                            <HebrewDatePicker 
+                              selected={editDate ? new Date(editDate) : null} 
+                              onChange={(d) => setEditDate(d ? d.toISOString().split('T')[0] : '')} 
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input type="number" value={editAmount} onChange={e => setEditAmount(Number(e.target.value))} className="w-24" />
+                          </td>
+                          <td className="p-3">
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                              שולם
+                            </span>
+                          </td>
+                          <td className="p-2 flex items-center gap-2 mt-1">
+                            <button onClick={() => handleEditSave(payment)} className="bg-green-600 hover:bg-green-700 text-white p-1.5 rounded" title="שמור"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingId(null)} className="border border-gray-300 hover:bg-gray-100 p-1.5 rounded" title="ביטול"><X className="w-4 h-4" /></button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="p-3">{payment.paidDate ? new Date(payment.paidDate).toLocaleDateString('he-IL') : '-'}</td>
+                          <td className="p-3 font-bold text-green-600">₪{payment.amount.toLocaleString()}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${payment.status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {payment.status === 'PAID' ? 'שולם' : payment.status}
+                            </span>
+                          </td>
+                          <td className="p-3 flex items-center gap-3">
+                            <button onClick={() => handleEdit(payment)} className="text-gray-400 hover:text-blue-600 transition" title="ערוך">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDelete(payment.id!)} className="text-gray-400 hover:text-red-600 transition" title="מחק">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>

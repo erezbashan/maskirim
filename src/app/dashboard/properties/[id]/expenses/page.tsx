@@ -6,7 +6,11 @@ import { getExpensesByProperty, deleteExpense } from "@/lib/db";
 import { Expense } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { HebrewDatePicker } from "@/components/ui/date-picker";
+import { ArrowRight, Trash2, Pencil, Check, X } from "lucide-react";
+import { updateDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 import Link from "next/link";
 
 export default function PropertyExpensesPage() {
@@ -17,20 +21,26 @@ export default function PropertyExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Edit Expense State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editDate, setEditDate] = useState<string>("");
+  const [editCategory, setEditCategory] = useState<string>("");
+  const [editDescription, setEditDescription] = useState<string>("");
+
+  const fetchData = async () => {
     if (!user || !id) return;
-    
-    const fetchData = async () => {
-      try {
-        const propExpenses = await getExpensesByProperty(id);
-        setExpenses(propExpenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      } catch (err) {
-        console.error("Error fetching expenses", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
+    try {
+      const propExpenses = await getExpensesByProperty(id);
+      setExpenses(propExpenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    } catch (err) {
+      console.error("Error fetching expenses", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user, id]);
 
@@ -38,6 +48,32 @@ export default function PropertyExpensesPage() {
     if (confirm("האם למחוק הוצאה זו?")) {
       await deleteExpense(expenseId);
       setExpenses(prev => prev.filter(e => e.id !== expenseId));
+    }
+  };
+
+  const handleEdit = (e: Expense) => {
+    setEditingId(e.id!);
+    setEditAmount(e.amount);
+    setEditDate(e.date.split("T")[0]);
+    setEditCategory(e.category);
+    setEditDescription(e.description || "");
+  };
+
+  const handleEditSave = async (e: Expense) => {
+    if (!e.id) return;
+    try {
+      const docRef = doc(db, "expenses", e.id);
+      await updateDoc(docRef, {
+        amount: editAmount,
+        date: new Date(editDate).toISOString(),
+        category: editCategory,
+        description: editDescription
+      });
+      setEditingId(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("שגיאה בעדכון ההוצאה");
     }
   };
 
@@ -65,21 +101,57 @@ export default function PropertyExpensesPage() {
           ) : (
             <div className="space-y-4">
               {expenses.map((expense) => (
-                <div key={expense.id} className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-lg text-red-600">₪{expense.amount.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600"><strong>תאריך:</strong> {new Date(expense.date).toLocaleDateString('he-IL')}</p>
-                    <p className="text-sm text-gray-600"><strong>קטגוריה:</strong> {expense.category}</p>
-                    {expense.description && <p className="text-sm text-gray-500 mt-1">{expense.description}</p>}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {expense.receiptUrl && (
-                      <a href={expense.receiptUrl} target="_blank" rel="noreferrer" className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200 transition">צפה בקבלה</a>
-                    )}
-                    <button onClick={() => handleDeleteExpense(expense.id!, expense.receiptUrl)} className="text-gray-400 hover:text-red-600 transition" title="מחק הוצאה">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
+                <div key={expense.id} className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                  
+                  {editingId === expense.id ? (
+                    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">סכום (₪)</label>
+                        <Input type="number" value={editAmount} onChange={e => setEditAmount(Number(e.target.value))} className="w-full" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">תאריך</label>
+                        <HebrewDatePicker 
+                          selected={editDate ? new Date(editDate) : null} 
+                          onChange={(d) => setEditDate(d ? d.toISOString().split('T')[0] : '')} 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">קטגוריה</label>
+                        <Input type="text" value={editCategory} onChange={e => setEditCategory(e.target.value)} className="w-full" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">תיאור</label>
+                        <Input type="text" value={editDescription} onChange={e => setEditDescription(e.target.value)} className="w-full" />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end gap-2 mt-2">
+                        <button onClick={() => setEditingId(null)} className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded text-sm transition font-medium">ביטול</button>
+                        <button onClick={() => handleEditSave(expense)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition font-medium flex items-center gap-1">
+                          <Check className="w-4 h-4" /> שמור שינויים
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-lg text-red-600">₪{expense.amount.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600"><strong>תאריך:</strong> {new Date(expense.date).toLocaleDateString('he-IL')}</p>
+                        <p className="text-sm text-gray-600"><strong>קטגוריה:</strong> {expense.category}</p>
+                        {expense.description && <p className="text-sm text-gray-500 mt-1">{expense.description}</p>}
+                      </div>
+                      <div className="flex items-center gap-4 border-t md:border-t-0 pt-3 md:pt-0">
+                        {expense.receiptUrl && (
+                          <a href={expense.receiptUrl} target="_blank" rel="noreferrer" className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200 transition">צפה בקבלה</a>
+                        )}
+                        <button onClick={() => handleEdit(expense)} className="text-gray-400 hover:text-blue-600 transition p-2" title="ערוך הוצאה">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteExpense(expense.id!, expense.receiptUrl)} className="text-gray-400 hover:text-red-600 transition p-2" title="מחק הוצאה">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
