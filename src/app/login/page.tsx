@@ -25,7 +25,7 @@ export default function LoginPage() {
         
         ui.start("#firebaseui-auth-container", {
           signInSuccessUrl: "/dashboard",
-          signInFlow: "popup",
+          signInFlow: "redirect",
           signInOptions: [
             firebase.auth.GoogleAuthProvider.PROVIDER_ID,
             {
