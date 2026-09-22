@@ -178,6 +178,12 @@ export const getRentPaymentsByUser = async (userId: string): Promise<RentPayment
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentPayment));
 };
 
+export const getRentPaymentsByProperty = async (propertyId: string): Promise<RentPayment[]> => {
+  const q = query(collection(db, "rentPayments"), where("propertyId", "==", propertyId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentPayment));
+};
+
 // Reminders
 export const getPendingReminders = async (propertyId: string): Promise<Reminder[]> => {
   const q = query(collection(db, "reminders"), where("propertyId", "==", propertyId), where("status", "==", "PENDING"));

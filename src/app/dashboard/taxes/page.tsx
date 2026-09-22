@@ -41,25 +41,11 @@ function InfoPopup({ title, content }: { title: string, content: string }) {
   );
 }
 
-function getMonthsActiveInYear(startDateStr: string, endDateStr: string, year: number) {
-  if (!startDateStr || !endDateStr) return 0;
-  const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
-  let months = 0;
-  for (let m = 0; m < 12; m++) {
-      const checkDate = new Date(year, m, 15);
-      if (checkDate >= start && checkDate <= end) {
-          months++;
-      }
-  }
-  return months;
-}
-
 export default function TaxesPage() {
   const { user } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [rentPeriods, setRentPeriods] = useState<RentPeriod[]>([]);
+  const [rentPayments, setRentPayments] = useState<RentPayment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   
   const [owners, setOwners] = useState<string[]>([]);
@@ -85,15 +71,15 @@ export default function TaxesPage() {
       const tSnap = await getDocs(query(collection(db, "tenants")));
       const tens = tSnap.docs.map(d => ({ id: d.id, ...d.data() } as Tenant));
 
-      const rSnap = await getDocs(query(collection(db, "rentPeriods")));
-      const rents = rSnap.docs.map(d => ({ id: d.id, ...d.data() } as RentPeriod));
+      const pmtSnap = await getDocs(query(collection(db, "rentPayments"), where("userId", "==", user.uid)));
+      const pmts = pmtSnap.docs.map(d => ({ id: d.id, ...d.data() } as RentPayment));
       
       const eSnap = await getDocs(query(collection(db, "expenses")));
       const exps = eSnap.docs.map(d => ({ id: d.id, ...d.data() } as Expense));
       
       setProperties(props);
       setTenants(tens);
-      setRentPeriods(rents);
+      setRentPayments(pmts);
       setExpenses(exps);
       
       const uniqueOwners = Array.from(new Set(props.map(p => p.ownerName).filter(Boolean)));
@@ -150,7 +136,6 @@ export default function TaxesPage() {
   if (loading) return <div className="p-8 text-center text-gray-500">טוען סימולטור...</div>;
 
   const ownerProps = properties.filter(p => p.ownerName === selectedOwner);
-  const ownerPropIds = ownerProps.map(p => p.id!);
 
   // Check for missing mandatory property fields
   const missingPropertyData = ownerProps.some(p => !p.propertyValue || p.yearlyFinancingCosts === undefined || p.yearlyFinancingCosts === null);
@@ -163,14 +148,15 @@ export default function TaxesPage() {
   let totalExpenses = 0;
 
   const propertyCalculations = ownerProps.map(prop => {
-    const propRentPeriods = rentPeriods.filter(rp => tenants.find(t => t.id === rp.tenantId)?.propertyId === prop.id);
-    const propRent = propRentPeriods.reduce((sum, rp) => {
-      const activeMonths = getMonthsActiveInYear(rp.startDate, rp.endDate, selectedYear);
-      return sum + ((rp.monthlyRent || 0) * activeMonths);
-    }, 0);
+    // Actual Income (Paid rent payments expected in the selected year)
+    const propRent = rentPayments
+      .filter(p => p.propertyId === prop.id && p.status === 'PAID' && p.expectedDate.startsWith(selectedYear.toString()))
+      .reduce((sum, p) => sum + p.amount, 0);
     
-    const propExpList = expenses.filter(e => e.propertyId === prop.id && e.date.startsWith(selectedYear.toString()));
-    const propExp = propExpList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    // Expenses in the selected year
+    const propExp = expenses
+      .filter(e => e.propertyId === prop.id && e.date.startsWith(selectedYear.toString()))
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     if (propRent === 0 && !zeroConfirmations[prop.id!]?.income) hasUnconfirmedIncome = true;
     if (propExp === 0 && !zeroConfirmations[prop.id!]?.expenses) hasUnconfirmedExpenses = true;
@@ -328,7 +314,7 @@ export default function TaxesPage() {
                     <tr key={prop.id} className={(!prop.propertyValue || prop.yearlyFinancingCosts === undefined) ? "bg-orange-50/50" : "hover:bg-gray-50/50 transition-colors"}>
                       <td className="p-4 font-semibold text-gray-900 border-l">{prop.address}</td>
                       <td className="p-4 border-l">
-                        <Link href={`/dashboard/properties/${prop.id}`} className="font-bold text-blue-600 hover:underline block mb-1">
+                        <Link href={`/dashboard/properties/${prop.id}/income`} className="font-bold text-blue-600 hover:underline block mb-1">
                           ₪{propRent.toLocaleString()}
                         </Link>
                         {propRent === 0 && (
@@ -339,7 +325,7 @@ export default function TaxesPage() {
                         )}
                       </td>
                       <td className="p-4 border-l">
-                        <Link href={`/dashboard/properties/${prop.id}`} className="font-bold text-blue-600 hover:underline block mb-1">
+                        <Link href={`/dashboard/properties/${prop.id}/expenses`} className="font-bold text-blue-600 hover:underline block mb-1">
                           ₪{propExp.toLocaleString()}
                         </Link>
                         {propExp === 0 && (
