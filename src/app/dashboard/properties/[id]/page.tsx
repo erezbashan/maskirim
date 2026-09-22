@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { getPropertiesByUser, getTenantsByProperty, getExpensesByProperty, getDocumentsByProperty } from "@/lib/db";
-import { Property, Tenant, Expense, Document as AppDocument } from "@/lib/types";
+import { getPropertiesByUser, getTenantsByProperty, getExpensesByProperty, getDocumentsByProperty, getRentPeriodsByTenant, deleteTenant, deleteRentPeriod, deleteProperty } from "@/lib/db";
+import { Property, Tenant, Expense, Document as AppDocument, RentPeriod } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
@@ -17,6 +17,7 @@ export default function PropertyDetailsPage() {
   
   const [property, setProperty] = useState<Property | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [rentPeriodsByTenant, setRentPeriodsByTenant] = useState<Record<string, RentPeriod[]>>({});
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [documents, setDocuments] = useState<AppDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,13 +27,20 @@ export default function PropertyDetailsPage() {
     
     const fetchData = async () => {
       try {
-        // In a real app we'd have getPropertyById, for now we filter:
         const userProps = await getPropertiesByUser(user.uid);
         const prop = userProps.find(p => p.id === id);
         if (prop) setProperty(prop);
 
         const propTenants = await getTenantsByProperty(id);
         setTenants(propTenants);
+
+        const periodsMap: Record<string, RentPeriod[]> = {};
+        for (const t of propTenants) {
+          if (t.id) {
+            periodsMap[t.id] = await getRentPeriodsByTenant(t.id);
+          }
+        }
+        setRentPeriodsByTenant(periodsMap);
 
         const propExpenses = await getExpensesByProperty(id);
         setExpenses(propExpenses);
@@ -48,6 +56,31 @@ export default function PropertyDetailsPage() {
     
     fetchData();
   }, [user, id]);
+
+  const handleDeleteTenant = async (tenantId: string) => {
+    if (!confirm("האם אתה בטוח שברצונך למחוק שוכר זה ואת כל תקופות השכירות שלו?")) return;
+    try {
+      await deleteTenant(tenantId);
+      setTenants(prev => prev.filter(t => t.id !== tenantId));
+    } catch (e) {
+      console.error(e);
+      alert("שגיאה במחיקת שוכר");
+    }
+  };
+
+  const handleDeleteRentPeriod = async (tenantId: string, periodId: string, url?: string) => {
+    if (!confirm("האם אתה בטוח שברצונך למחוק תקופת שכירות זו?")) return;
+    try {
+      await deleteRentPeriod(periodId, url);
+      setRentPeriodsByTenant(prev => ({
+        ...prev,
+        [tenantId]: prev[tenantId].filter(p => p.id !== periodId)
+      }));
+    } catch (e) {
+      console.error(e);
+      alert("שגיאה במחיקת תקופה");
+    }
+  };
 
   if (loading) return <div>טוען נתונים...</div>;
   if (!property) return null;
@@ -89,16 +122,52 @@ export default function PropertyDetailsPage() {
             {tenants.length === 0 ? (
               <p className="text-gray-500">אין שוכרים רשומים.</p>
             ) : (
-              <ul className="space-y-2">
+              <div className="space-y-6">
                 {tenants.map(tenant => (
-                  <li key={tenant.id} className="border p-3 rounded hover:bg-gray-50 transition cursor-pointer" onClick={() => router.push(`/dashboard/properties/${id}/tenants/${tenant.id}`)}>
-                    <div className="flex justify-between items-center">
-                      <strong>{tenant.name}</strong>
-                      <span className="text-sm text-blue-600 font-medium">לפרטים מורחבים</span>
+                  <div key={tenant.id} className="border rounded-lg shadow-sm overflow-hidden">
+                    <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
+                      <div>
+                        <h3 className="font-bold text-lg">{tenant.name}</h3>
+                        {tenant.paymentDueDay && <p className="text-sm text-gray-600">יום תשלום: ה-{tenant.paymentDueDay} בחודש</p>}
+                      </div>
+                      <div className="flex space-x-3 space-x-reverse">
+                        <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/edit`} className="text-blue-600 text-sm hover:underline font-medium">ערוך שוכר</Link>
+                        <button onClick={() => handleDeleteTenant(tenant.id!)} className="text-red-600 text-sm hover:underline font-medium">מחק שוכר</button>
+                      </div>
                     </div>
-                  </li>
+                    <div className="p-4 bg-white">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-semibold text-gray-700">תקופות שכירות</h4>
+                        <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/rent-periods/new`} className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 font-medium">הוסף תקופה</Link>
+                      </div>
+                      
+                      {(!rentPeriodsByTenant[tenant.id!] || rentPeriodsByTenant[tenant.id!].length === 0) ? (
+                        <p className="text-sm text-gray-500">אין תקופות שכירות רשומות.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {rentPeriodsByTenant[tenant.id!].map(period => (
+                            <div key={period.id} className="border p-3 rounded text-sm relative">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                                <p><strong>מתאריך:</strong> {new Date(period.startDate).toLocaleDateString()}</p>
+                                <p><strong>עד תאריך:</strong> {new Date(period.endDate).toLocaleDateString()}</p>
+                                <p><strong>שכירות:</strong> ₪{period.monthlyRent}</p>
+                                {period.guaranteeType && <p><strong>ערבות:</strong> {period.guaranteeType}</p>}
+                              </div>
+                              <div className="flex space-x-3 space-x-reverse text-xs mt-3 pt-2 border-t border-gray-100">
+                                <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/rent-periods/${period.id}/edit`} className="text-blue-600 hover:underline">ערוך תקופה</Link>
+                                <button onClick={() => handleDeleteRentPeriod(tenant.id!, period.id!, period.documentUrl)} className="text-red-600 hover:underline">מחק תקופה</button>
+                                {period.documentUrl && (
+                                  <a href={period.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-semibold pr-2 border-r border-gray-300">📄 צפה בחוזה</a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </CardContent>
         </Card>

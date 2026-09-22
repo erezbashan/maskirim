@@ -317,7 +317,7 @@ export default function GlobalUploader() {
                   )}
                   <div className="space-y-2">
                     <Label>שכירות לחודש (₪)</Label>
-                    <Input type="number" value={parsedData.rentPeriodInfo?.monthlyRent || 0} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, monthlyRent: parseFloat(e.target.value)}})} />
+                    <Input type="number" placeholder="הזן סכום" value={parsedData.rentPeriodInfo?.monthlyRent ?? ""} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, monthlyRent: parseFloat(e.target.value) || null}})} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

@@ -121,6 +121,11 @@ export const getTenantById = async (id: string): Promise<Tenant | null> => {
   return null;
 };
 
+export const updateTenant = async (id: string, data: Partial<Tenant>) => {
+  const docRef = doc(db, "tenants", id);
+  await updateDoc(docRef, data);
+};
+
 // Rent Periods
 export const addRentPeriod = async (period: RentPeriod) => {
   const docRef = await addDoc(collection(db, "rentPeriods"), period);
@@ -131,6 +136,17 @@ export const getRentPeriodsByTenant = async (tenantId: string): Promise<RentPeri
   const q = query(collection(db, "rentPeriods"), where("tenantId", "==", tenantId));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentPeriod));
+};
+
+export const getRentPeriodById = async (id: string): Promise<RentPeriod | null> => {
+  const docSnap = await getDoc(doc(db, "rentPeriods", id));
+  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() } as RentPeriod;
+  return null;
+};
+
+export const updateRentPeriod = async (id: string, data: Partial<RentPeriod>) => {
+  const docRef = doc(db, "rentPeriods", id);
+  await updateDoc(docRef, data);
 };
 
 export const deleteRentPeriod = async (id: string, documentUrl?: string) => {
