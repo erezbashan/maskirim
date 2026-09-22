@@ -86,6 +86,21 @@ export default function PropertyDetailsPage() {
   if (loading) return <div>טוען נתונים...</div>;
   if (!property) return null;
 
+  // Sorting logic
+  const getLatestPeriodDate = (tenantId: string) => {
+    const periods = rentPeriodsByTenant[tenantId] || [];
+    if (periods.length === 0) return 0;
+    return Math.max(...periods.map(p => new Date(p.startDate).getTime()));
+  };
+
+  const sortedTenants = [...tenants].sort((a, b) => {
+    const latestA = getLatestPeriodDate(a.id!);
+    const latestB = getLatestPeriodDate(b.id!);
+    // If both have 0 (no periods), keep original order
+    if (latestA === 0 && latestB === 0) return 0;
+    return latestB - latestA; // Descending: newest first
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -120,11 +135,11 @@ export default function PropertyDetailsPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            {tenants.length === 0 ? (
+            {sortedTenants.length === 0 ? (
               <p className="text-gray-500">אין שוכרים רשומים.</p>
             ) : (
               <div className="space-y-6">
-                {tenants.map(tenant => (
+                {sortedTenants.map(tenant => (
                   <div key={tenant.id} className="border rounded-lg shadow-sm overflow-hidden">
                     <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
                       <div>
@@ -150,7 +165,9 @@ export default function PropertyDetailsPage() {
                         <p className="text-sm text-gray-500">אין תקופות שכירות רשומות.</p>
                       ) : (
                         <div className="space-y-3">
-                          {rentPeriodsByTenant[tenant.id!].map(period => (
+                          {[...rentPeriodsByTenant[tenant.id!]]
+                            .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+                            .map(period => (
                             <div key={period.id} className="border p-3 rounded text-sm relative">
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
                                 <p><strong>מתאריך:</strong> {new Date(period.startDate).toLocaleDateString('he-IL')}</p>
