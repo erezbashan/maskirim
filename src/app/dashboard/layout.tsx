@@ -42,17 +42,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard/taxes" className="block px-4 py-2 rounded text-gray-700 hover:bg-gray-100">
             סימולטור מס
           </Link>
+          
+          <div className="pt-4 mt-4 border-t border-gray-100">
+            <a 
+              href={`mailto:erez.bashan@gmail.com?subject=Feedback%20on%20Property%20Manager&body=URL:%20${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}%0A%0AFeedback:%20`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-2 rounded text-gray-600 hover:bg-gray-100 text-sm"
+            >
+              שלח משוב
+            </a>
+          </div>
         </nav>
         <div className="p-4 border-t space-y-2">
-          <div className="text-sm mb-2 truncate" title={user.email || ""}>
+          <div className="text-sm mb-2 truncate text-center text-gray-600" title={user.email || ""}>
             {user.email}
           </div>
-          <button 
-            onClick={() => window.location.href = `mailto:erez.bashan@gmail.com?subject=Feedback%20on%20Property%20Manager&body=URL:%20${encodeURIComponent(window.location.href)}%0A%0AFeedback:%20`}
-            className="w-full text-center px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition"
-          >
-            שלח משוב
-          </button>
           <button 
             onClick={handleLogout}
             className="w-full text-center px-4 py-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
