@@ -210,6 +210,9 @@ export default function PropertyDetailsPage() {
                         {tenant.paymentDueDay && <p className="text-sm text-gray-600">יום תשלום: ה-{tenant.paymentDueDay} בחודש</p>}
                       </div>
                       <div className="flex space-x-3 space-x-reverse items-center">
+                        <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/payments`} className="text-gray-500 hover:text-green-600 transition" title="היסטוריית תשלומים">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        </Link>
                         <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/edit`} className="text-gray-500 hover:text-blue-600 transition" title="ערוך שוכר">
                           <Pencil className="w-5 h-5" />
                         </Link>
