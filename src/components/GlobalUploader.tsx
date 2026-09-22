@@ -147,10 +147,11 @@ export default function GlobalUploader() {
     if (!parsedData) return false;
     if (selectedPropertyId === "") return false;
     if (selectedPropertyId === "NEW" && !parsedData.propertyInfo?.address) return false;
+    const effectiveTenantId = selectedPropertyId === "NEW" ? "NEW" : selectedTenantId;
     
     if (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") {
-      if (selectedTenantId === "") return false;
-      if (selectedTenantId === "NEW") {
+      if (effectiveTenantId === "") return false;
+      if (effectiveTenantId === "NEW") {
         if (!parsedData.tenantInfo?.name) return false;
         if (!parsedData.tenantInfo?.paymentDueDay) return false;
       }
@@ -189,7 +190,8 @@ export default function GlobalUploader() {
       }
 
       // 3. Save Specific Entity
-      let targetTenantId = selectedTenantId === "NEW" ? undefined : selectedTenantId;
+      const effectiveTenantId = selectedPropertyId === "NEW" ? "NEW" : selectedTenantId;
+      let targetTenantId = effectiveTenantId === "NEW" ? undefined : effectiveTenantId;
       let targetRentPeriodId = undefined;
 
       if (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") {
@@ -334,20 +336,27 @@ export default function GlobalUploader() {
                       <option value="NEW">+ צור נכס חדש</option>
                     </select>
                   </div>
-                  {parsedData.documentType !== 'EXPENSE' && selectedPropertyId !== "NEW" && selectedPropertyId !== "" && (
+                  {parsedData.documentType !== 'EXPENSE' && selectedPropertyId !== "" && (
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">שייך לשוכר (אופציונלי)</Label>
+                      <Label className="text-xs text-gray-500">שייך לשוכר</Label>
                       <select 
                         className="w-full border rounded p-2 text-sm bg-white"
-                        value={selectedTenantId}
+                        value={selectedPropertyId === "NEW" ? "NEW" : selectedTenantId}
                         onChange={(e) => setSelectedTenantId(e.target.value)}
+                        disabled={selectedPropertyId === "NEW"}
                       >
-                        <option value="">-- בחר שוכר --</option>
-                        {tenants.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                        {(parsedData.documentType === 'LEASE' || parsedData.documentType === 'EXTENSION') && (
-                          <option value="NEW">+ צור שוכר חדש</option>
+                        {selectedPropertyId === "NEW" ? (
+                          <option value="NEW">צור שוכר חדש עבור נכס חדש</option>
+                        ) : (
+                          <>
+                            <option value="">-- בחר שוכר --</option>
+                            {tenants.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                            {(parsedData.documentType === 'LEASE' || parsedData.documentType === 'EXTENSION') && (
+                              <option value="NEW">+ צור שוכר חדש</option>
+                            )}
+                          </>
                         )}
                       </select>
                     </div>
@@ -370,7 +379,7 @@ export default function GlobalUploader() {
               
               {(parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") && (
                 <>
-                  {selectedTenantId === "NEW" && (
+                  {(selectedPropertyId === "NEW" || selectedTenantId === "NEW") && (
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>שוכרים (שוכר חדש)</Label>
@@ -446,7 +455,7 @@ export default function GlobalUploader() {
                 disabled={!isFormValid()}
                 className="px-6 py-2 bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                שמור ומיין מסמך
+                שמירה
               </button>
             </CardFooter>
           </Card>
