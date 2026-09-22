@@ -72,11 +72,15 @@ export async function POST(req: NextRequest) {
           "amount": 0,
           "date": "YYYY-MM-DD",
           "description": "Short description of expense"
+        },
+        "otherInfo": {
+          "title": "Short descriptive title of the document (e.g. 'תעודת זהות של אופיר', 'חשבון ארנונה')",
+          "date": "YYYY-MM-DD or empty string"
         }
       }
       
-      If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo.
-      If a field is missing or not applicable, leave it empty or 0. For paymentDueDay AND monthlyRent, set it to a number ONLY if explicitly stated, otherwise return null. DO NOT GUESS OR USE DEFAULTS.
+      If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo. If it's a generic file or ID card, fill otherInfo.
+      If a field is missing or not applicable, leave it empty or null. For paymentDueDay AND monthlyRent, set it to a number ONLY if explicitly stated, otherwise return null. DO NOT GUESS OR USE DEFAULTS.
     `;
 
     let result;

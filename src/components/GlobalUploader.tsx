@@ -161,6 +161,10 @@ export default function GlobalUploader() {
       if (!parsedData.expenseInfo?.amount) return false;
     }
 
+    if (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") {
+      if (!parsedData.otherInfo?.title) return false;
+    }
+
     return true;
   };
 
@@ -220,15 +224,20 @@ export default function GlobalUploader() {
       }
 
       // 4. Save Document Record
+      let docName = originalFile.name;
+      if (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") {
+        docName = parsedData.otherInfo?.title || originalFile.name;
+      }
+
       await addDocumentRecord({
         userId: user.uid,
         propertyId: targetPropertyId !== "UNKNOWN" ? targetPropertyId : undefined,
         tenantId: targetTenantId,
         rentPeriodId: targetRentPeriodId,
-        name: originalFile.name,
+        name: docName,
         url: fileUrl,
         type: (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") ? "LEASE" : parsedData.documentType === "EXPENSE" ? "EXPENSE" : "OTHER",
-        createdAt: new Date().toISOString()
+        createdAt: (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") && parsedData.otherInfo?.date ? new Date(parsedData.otherInfo.date).toISOString() : new Date().toISOString()
       });
 
       setStep("IDLE");
@@ -312,19 +321,21 @@ export default function GlobalUploader() {
                       <option value="NEW">+ צור נכס חדש</option>
                     </select>
                   </div>
-                  {(parsedData.documentType === 'LEASE' || parsedData.documentType === 'EXTENSION') && selectedPropertyId !== "NEW" && selectedPropertyId !== "" && (
+                  {parsedData.documentType !== 'EXPENSE' && selectedPropertyId !== "NEW" && selectedPropertyId !== "" && (
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">שייך לשוכר</Label>
+                      <Label className="text-xs text-gray-500">שייך לשוכר (אופציונלי)</Label>
                       <select 
                         className="w-full border rounded p-2 text-sm bg-white"
                         value={selectedTenantId}
                         onChange={(e) => setSelectedTenantId(e.target.value)}
                       >
-                        <option value="" disabled>-- בחר שוכר --</option>
+                        <option value="">-- בחר שוכר --</option>
                         {tenants.map(t => (
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
-                        <option value="NEW">+ צור שוכר חדש</option>
+                        {(parsedData.documentType === 'LEASE' || parsedData.documentType === 'EXTENSION') && (
+                          <option value="NEW">+ צור שוכר חדש</option>
+                        )}
                       </select>
                     </div>
                   )}
@@ -390,6 +401,19 @@ export default function GlobalUploader() {
                   <div className="space-y-2">
                     <Label>תיאור</Label>
                     <Input value={parsedData.expenseInfo?.description || ""} onChange={(e) => setParsedData({...parsedData, expenseInfo: {...parsedData.expenseInfo, description: e.target.value}})} />
+                  </div>
+                </>
+              )}
+
+              {(parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") && (
+                <>
+                  <div className="space-y-2">
+                    <Label>כותרת המסמך (חובה)</Label>
+                    <Input value={parsedData.otherInfo?.title || ""} onChange={(e) => setParsedData({...parsedData, otherInfo: {...parsedData.otherInfo, title: e.target.value}})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>תאריך (אופציונלי)</Label>
+                    <Input type="date" value={parsedData.otherInfo?.date || ""} onChange={(e) => setParsedData({...parsedData, otherInfo: {...parsedData.otherInfo, date: e.target.value}})} />
                   </div>
                 </>
               )}
