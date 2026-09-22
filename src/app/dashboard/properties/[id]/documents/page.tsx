@@ -80,17 +80,19 @@ export default function DocumentsRepositoryPage() {
           {filteredDocs.length === 0 ? (
             <p className="text-gray-500">לא נמצאו מסמכים התואמים לחיפוש שלך.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
               {filteredDocs.map((doc) => {
                 const displayType = typeTranslations[doc.type] || doc.type;
                 return (
-                  <div key={doc.id} className="p-4 border rounded-lg shadow-sm bg-gray-50 hover:bg-white transition flex flex-col justify-between">
+                  <div key={doc.id} className="p-4 border rounded-lg shadow-sm bg-gray-50 hover:bg-white transition flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                     <div>
                       <a href={doc.url} target="_blank" rel="noreferrer" className="font-bold text-blue-700 hover:underline text-lg">
                         {doc.name}
                       </a>
-                      <p className="text-sm text-gray-600 mt-2"><strong>סוג:</strong> {displayType}</p>
-                      <p className="text-sm text-gray-600"><strong>תאריך העלאה:</strong> {new Date(doc.createdAt).toLocaleDateString('he-IL')}</p>
+                    </div>
+                    <div className="flex space-x-6 space-x-reverse text-sm text-gray-600">
+                      <p><strong>סוג:</strong> {displayType}</p>
+                      <p><strong>הועלה:</strong> {new Date(doc.createdAt).toLocaleDateString('he-IL')}</p>
                     </div>
                   </div>
                 );
