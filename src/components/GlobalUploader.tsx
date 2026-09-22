@@ -27,8 +27,17 @@ export default function GlobalUploader() {
     
     try {
       const reader = new FileReader();
-      reader.onloadend = async () => {
+      
+      reader.onerror = () => {
+        alert("לא ניתן לקרוא את הקובץ. ייתכן שהוא פגום או לא זמין (למשל בענן).");
+        setStep("IDLE");
+      };
+
+      reader.onload = async () => {
         try {
+          if (!reader.result) {
+             throw new Error("File read resulted in null");
+          }
           const base64Data = (reader.result as string).split(',')[1];
           const payload = {
             fileName: file.name,
