@@ -281,49 +281,16 @@ export default function PropertyDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Documents List */}
-        <Card>
-          <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle>מסמכים סרוקים (5 אחרונים)</CardTitle>
-            <Link 
-              href={`/dashboard/properties/${id}/documents`}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              לכל המסמכים
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {documents.length === 0 ? (
-              <p className="text-gray-500">אין מסמכים מצורפים לנכס זה</p>
-            ) : (
-              <div className="space-y-2">
-                {[...documents]
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .slice(0, 5)
-                  .map((doc) => {
-                    const typeTranslations: Record<string, string> = {
-                      "LEASE": "חוזה שכירות",
-                      "EXTENSION": "הארכת שכירות",
-                      "EXPENSE": "הוצאה / קבלה",
-                      "ID_CARD": "תעודה מזהה",
-                      "OTHER": "מסמך כללי"
-                    };
-                    const displayType = typeTranslations[doc.type] || doc.type;
-
-                    return (
-                    <div key={doc.id} className="p-3 border rounded shadow-sm bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <a href={doc.url} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 hover:underline">
-                          {doc.name}
-                        </a>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">סוג: {displayType} | הועלה ב: {new Date(doc.createdAt).toLocaleDateString('he-IL')}</p>
-                    </div>
-                  )})}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Documents Repository Link */}
+        <Link href={`/dashboard/properties/${id}/documents`} className="block">
+          <Card className="hover:bg-blue-50 transition border-blue-100 cursor-pointer shadow-sm">
+            <CardContent className="p-6 flex justify-center items-center">
+              <span className="text-blue-700 font-bold text-lg flex items-center gap-2">
+                📂 כניסה למאגר המסמכים של הנכס ({documents.length})
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );
