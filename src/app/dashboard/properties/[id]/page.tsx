@@ -153,8 +153,8 @@ export default function PropertyDetailsPage() {
                           {rentPeriodsByTenant[tenant.id!].map(period => (
                             <div key={period.id} className="border p-3 rounded text-sm relative">
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                                <p><strong>מתאריך:</strong> {new Date(period.startDate).toLocaleDateString()}</p>
-                                <p><strong>עד תאריך:</strong> {new Date(period.endDate).toLocaleDateString()}</p>
+                                <p><strong>מתאריך:</strong> {new Date(period.startDate).toLocaleDateString('he-IL')}</p>
+                                <p><strong>עד תאריך:</strong> {new Date(period.endDate).toLocaleDateString('he-IL')}</p>
                                 <p><strong>שכירות:</strong> ₪{period.monthlyRent}</p>
                                 {period.guaranteeType && <p><strong>ערבות:</strong> {period.guaranteeType}</p>}
                               </div>
@@ -193,7 +193,7 @@ export default function PropertyDetailsPage() {
               <div className="space-y-4">
                 {expenses.map((expense) => (
                   <div key={expense.id} className="p-4 border rounded shadow-sm">
-                    <p><strong>תאריך:</strong> {new Date(expense.date).toLocaleDateString()}</p>
+                    <p><strong>תאריך:</strong> {new Date(expense.date).toLocaleDateString('he-IL')}</p>
                     <p><strong>סכום:</strong> ₪{expense.amount}</p>
                     {expense.description && <p><strong>תיאור:</strong> {expense.description}</p>}
                     {expense.receiptUrl && (
@@ -220,7 +220,7 @@ export default function PropertyDetailsPage() {
                   <div key={doc.id} className="p-3 border rounded shadow-sm flex justify-between items-center bg-gray-50">
                     <div>
                       <p className="font-semibold text-gray-800">{doc.name}</p>
-                      <p className="text-xs text-gray-500">סוג: {doc.type} | תאריך: {new Date(doc.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-500">סוג: {doc.type} | תאריך: {new Date(doc.createdAt).toLocaleDateString('he-IL')}</p>
                     </div>
                     <a href={doc.url} target="_blank" rel="noreferrer" className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">
                       צפה במסמך

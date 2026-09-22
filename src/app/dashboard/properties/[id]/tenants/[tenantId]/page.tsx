@@ -84,8 +84,8 @@ export default function TenantDetailsPage() {
                 {rentPeriods.map(period => (
                   <div key={period.id} className="border p-4 rounded shadow-sm relative">
                     <div className="grid grid-cols-2 gap-2 mb-2">
-                      <p><strong>תאריך התחלה:</strong> {new Date(period.startDate).toLocaleDateString()}</p>
-                      <p><strong>תאריך סיום:</strong> {new Date(period.endDate).toLocaleDateString()}</p>
+                      <p><strong>תאריך התחלה:</strong> {new Date(period.startDate).toLocaleDateString('he-IL')}</p>
+                      <p><strong>תאריך סיום:</strong> {new Date(period.endDate).toLocaleDateString('he-IL')}</p>
                       <p><strong>שכר דירה:</strong> ₪{period.monthlyRent}</p>
                       {tenant?.paymentDueDay && <p><strong>יום תשלום:</strong> ה-{tenant.paymentDueDay} בחודש</p>}
                     </div>
