@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
       
       If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo. If it's a generic file or ID card, fill otherInfo.
       If a field is missing or not applicable, leave it empty or null. For paymentDueDay AND monthlyRent, set it to a number ONLY if explicitly stated, otherwise return null. DO NOT GUESS OR USE DEFAULTS.
+      IMPORTANT FOR DATES: For endDate, extract ONLY the definite base period's end date. DO NOT include optional extension periods (תקופת אופציה) in the endDate.
     `;
 
     let result;
