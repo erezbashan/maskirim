@@ -190,8 +190,8 @@ export default function TaxesPage() {
 
       <Card>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="space-y-2">
+          <div className="flex flex-col gap-4 max-w-md">
+            <div className="flex flex-col space-y-1.5">
               <Label className="text-lg font-semibold">שנת מס</Label>
               <select 
                 className="w-full border rounded-md p-3 bg-gray-50 font-medium"
@@ -201,7 +201,7 @@ export default function TaxesPage() {
                 {[2023, 2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col space-y-1.5">
               <Label className="text-lg font-semibold">בחר בעלים (נישום)</Label>
               <select 
                 className="w-full border rounded-md p-3 bg-gray-50 font-medium"
@@ -211,7 +211,7 @@ export default function TaxesPage() {
                 {owners.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col space-y-1.5">
               <Label className="text-lg font-semibold flex items-center">
                 מדרגת מס שולי (%)
                 <InfoPopup title="מדרגת מס שולי" content="שיעור המס החל על השקל העליון בהכנסה שלכם מיגיעה אישית (או פסיבית, בדרך כלל החל מ-31% אלא אם אתם מעל גיל 60). משפיע ישירות על מסלול הפטור והמסלול הפירותי." />
@@ -226,7 +226,7 @@ export default function TaxesPage() {
                 className="text-lg p-3"
               />
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col space-y-1.5">
               <Label className="text-lg font-semibold flex items-center">
                 הפסדים מועברים (₪)
                 <InfoPopup title="הפסדים מועברים" content="הפסדים עסקיים משנים קודמות המוכרים לצרכי קיזוז מס מול הכנסות פירותיות (שכירות) בשנה הנוכחית." />
@@ -253,46 +253,6 @@ export default function TaxesPage() {
             {needsIncomeConfirmation && <li>לא נמצאו הכנסות עבור שנה זו. סמנו V למטה לאישור או <Link href="/dashboard/properties" className="underline">הזינו תקופות שכירות</Link>.</li>}
             {needsExpensesConfirmation && <li>לא נמצאו הוצאות עבור שנה זו. סמנו V למטה לאישור או הזינו הוצאות בכרטיס הנכס.</li>}
           </ul>
-        </div>
-      )}
-
-      {canCalculate && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-100 transition-opacity">
-          <Card className="border-blue-200 shadow-md relative overflow-hidden">
-            <CardHeader className="bg-blue-50/80 border-b">
-              <CardTitle className="text-xl text-blue-800 text-center">מסלול 10%</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 text-center space-y-4">
-              <div className="text-4xl font-bold text-gray-900">
-                ₪{Math.round(simulation.reducedTrackTax).toLocaleString()}
-              </div>
-              <p className="text-sm text-gray-500">10% מההכנסות ברוטו.<br/>ללא הכרה בהוצאות או פחת.</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-emerald-200 shadow-md relative overflow-hidden">
-            <CardHeader className="bg-emerald-50/80 border-b">
-              <CardTitle className="text-xl text-emerald-800 text-center">מסלול פטור / חלקי</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 text-center space-y-4">
-              <div className="text-4xl font-bold text-gray-900">
-                ₪{Math.round(simulation.exemptionTrackTax).toLocaleString()}
-              </div>
-              <p className="text-sm text-gray-500">תקרת פטור שנתית: ₪{(ceiling * 12).toLocaleString()}<br/>(₪{ceiling.toLocaleString()} בחודש - מעודכן לשנת {selectedYear})</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-purple-200 shadow-md relative overflow-hidden">
-            <CardHeader className="bg-purple-50/80 border-b">
-              <CardTitle className="text-xl text-purple-800 text-center">מסלול שולי (פירותי)</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 text-center space-y-4">
-              <div className="text-4xl font-bold text-gray-900">
-                ₪{Math.round(simulation.marginalTrackTax).toLocaleString()}
-              </div>
-              <p className="text-sm text-gray-500">לפי מס שולי {marginalTaxRate}%<br/>הכרה מלאה בהוצאות, מימון ופחת.</p>
-            </CardContent>
-          </Card>
         </div>
       )}
 
@@ -412,6 +372,61 @@ export default function TaxesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {canCalculate && (
+        <div className="space-y-6 pt-4 border-t-2 border-dashed border-gray-300">
+          <h2 className="text-2xl font-bold text-gray-900 text-center">תוצאות הסימולציה</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-100 transition-opacity">
+            {[
+              {
+                id: '10',
+                title: "מסלול 10%",
+                tax: simulation.reducedTrackTax,
+                desc: "10% מההכנסות ברוטו. ללא הכרה בהוצאות או פחת.",
+                colors: "border-blue-200 bg-blue-50/80 text-blue-800",
+              },
+              {
+                id: 'exemption',
+                title: "מסלול פטור / חלקי",
+                tax: simulation.exemptionTrackTax,
+                desc: `תקרת פטור שנתית: ₪${(ceiling * 12).toLocaleString()} (₪${ceiling.toLocaleString()} בחודש)`,
+                colors: "border-emerald-200 bg-emerald-50/80 text-emerald-800",
+              },
+              {
+                id: 'marginal',
+                title: "מסלול שולי (פירותי)",
+                tax: simulation.marginalTrackTax,
+                desc: `לפי מס שולי ${marginalTaxRate}%. הכרה מלאה בהוצאות, מימון ופחת.`,
+                colors: "border-purple-200 bg-purple-50/80 text-purple-800",
+              },
+            ].map(track => {
+              const isWinner = track.tax === Math.min(simulation.reducedTrackTax, simulation.exemptionTrackTax, simulation.marginalTrackTax);
+              return (
+                <Card 
+                  key={track.id} 
+                  className={`relative overflow-hidden shadow-md transition-all ${isWinner ? 'ring-4 ring-green-500 scale-105 z-10' : 'border-gray-200'}`}
+                >
+                  {isWinner && (
+                    <div className="absolute top-0 right-0 bg-green-500 text-white px-3 py-1 text-sm font-bold rounded-bl-lg">
+                      המסלול המשתלם ביותר!
+                    </div>
+                  )}
+                  <CardHeader className={`${track.colors} border-b`}>
+                    <CardTitle className="text-xl text-center">{track.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 text-center space-y-4">
+                    <div className={`text-4xl font-bold ${isWinner ? 'text-green-700' : 'text-gray-900'}`}>
+                      ₪{Math.round(track.tax).toLocaleString()}
+                    </div>
+                    <p className="text-sm text-gray-500">{track.desc}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
 
     </div>
   );
