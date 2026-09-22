@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getRentPaymentsByProperty, getTenantsByProperty } from "@/lib/db";
+import { getRentPaymentsByProperty, getTenantsByProperty, addRentPayment } from "@/lib/db";
 import { RentPayment, Tenant } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { HebrewDatePicker } from "@/components/ui/date-picker";
+import { ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 export default function PropertyIncomePage() {
@@ -15,33 +19,74 @@ export default function PropertyIncomePage() {
   const { user } = useAuth();
   
   const [payments, setPayments] = useState<(RentPayment & { tenantName?: string })[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user || !id) return;
-    
-    const fetchData = async () => {
-      try {
-        const propPayments = await getRentPaymentsByProperty(id);
-        const tenants = await getTenantsByProperty(id);
-        
-        const tenantMap = new Map(tenants.map(t => [t.id, t.name]));
-        
-        const enrichedPayments = propPayments.map(p => ({
-          ...p,
-          tenantName: tenantMap.get(p.tenantId) || "שוכר לא ידוע"
-        }));
+  // Add Income state
+  const [isAdding, setIsAdding] = useState(false);
+  const [newAmount, setNewAmount] = useState<number | "">("");
+  const [newDate, setNewDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [selectedTenant, setSelectedTenant] = useState<string>("");
 
-        setPayments(enrichedPayments.sort((a, b) => new Date(b.paidDate || b.expectedDate).getTime() - new Date(a.paidDate || a.expectedDate).getTime()));
-      } catch (err) {
-        console.error("Error fetching income", err);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    if (!user || !id) return;
+    try {
+      const propPayments = await getRentPaymentsByProperty(id);
+      const fetchedTenants = await getTenantsByProperty(id);
+      setTenants(fetchedTenants);
+      
+      const tenantMap = new Map(fetchedTenants.map(t => [t.id, t.name]));
+      
+      const enrichedPayments = propPayments.map(p => ({
+        ...p,
+        tenantName: tenantMap.get(p.tenantId) || "שוכר לא ידוע"
+      }));
+
+      setPayments(enrichedPayments.sort((a, b) => new Date(b.paidDate || b.expectedDate).getTime() - new Date(a.paidDate || a.expectedDate).getTime()));
+      
+      if (fetchedTenants.length > 0 && !selectedTenant) {
+        setSelectedTenant(fetchedTenants[0].id!);
       }
-    };
-    
+    } catch (err) {
+      console.error("Error fetching income", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user, id]);
+
+  const handleAddSave = async () => {
+    if (!user || !newAmount || !newDate || !selectedTenant) return;
+    try {
+      await addRentPayment({
+        userId: user.uid,
+        propertyId: id,
+        tenantId: selectedTenant,
+        rentPeriodId: 'manual',
+        expectedDate: newDate,
+        paidDate: new Date(newDate).toISOString(),
+        amount: Number(newAmount),
+        status: 'PAID'
+      });
+      setIsAdding(false);
+      setNewAmount("");
+      setNewDate(new Date().toISOString().split("T")[0]);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("שגיאה בהוספת ההכנסה");
+    }
+  };
+
+  const handleDelete = async (paymentId: string) => {
+    if (confirm("האם למחוק הכנסה זו?")) {
+      await deleteDoc(doc(db, "rentPayments", paymentId));
+      setPayments(prev => prev.filter(p => p.id !== paymentId));
+    }
+  };
 
   if (loading) return <div className="p-8 text-center text-gray-500">טוען הכנסות...</div>;
 
@@ -56,13 +101,68 @@ export default function PropertyIncomePage() {
         <h1 className="text-3xl font-bold text-gray-900">הכנסות הנכס</h1>
       </div>
 
-      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-green-800 mb-1">סך הכנסות (שולמו) בנכס</h2>
-        <p className="text-3xl font-bold text-green-900">₪{totalPaid.toLocaleString()}</p>
-        <p className="text-sm text-green-700 mt-2">
-          הערה: כדי להוסיף, לערוך או למחוק תשלום, יש לעבור ל<strong>היסטוריית תשלומים</strong> של השוכר הרלוונטי.
-        </p>
+      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-green-800 mb-1">סך הכנסות (שולמו) בנכס</h2>
+          <p className="text-3xl font-bold text-green-900">₪{totalPaid.toLocaleString()}</p>
+        </div>
+        <button 
+          onClick={() => setIsAdding(!isAdding)}
+          className="bg-green-600 text-white px-4 py-2 rounded shadow-sm hover:bg-green-700 font-medium"
+        >
+          {isAdding ? "ביטול" : "+ הוסף הכנסה ידנית"}
+        </button>
       </div>
+
+      {isAdding && (
+        <Card className="mb-6 bg-white border-green-300 shadow-sm">
+          <CardHeader className="bg-green-50/50 border-b border-green-100 pb-4">
+            <CardTitle className="text-green-800 text-lg">הוספת תשלום חדש</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 flex flex-col md:flex-row items-end gap-4">
+            <div className="flex-1 w-full">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">שייך לשוכר</label>
+              <select 
+                className="w-full border-gray-300 rounded-md shadow-sm border p-2"
+                value={selectedTenant}
+                onChange={e => setSelectedTenant(e.target.value)}
+              >
+                {tenants.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+                {tenants.length === 0 && <option value="manual">כללי (ללא שוכר)</option>}
+              </select>
+            </div>
+            <div className="flex-1 w-full">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">סכום (₪)</label>
+              <Input type="number" placeholder="הכנס סכום" value={newAmount} onChange={e => setNewAmount(e.target.value === "" ? "" : Number(e.target.value))} />
+            </div>
+            <div className="flex-1 w-full">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">תאריך קבלה</label>
+              <HebrewDatePicker 
+                selected={newDate ? new Date(newDate) : null} 
+                onChange={(date) => {
+                  if (date) {
+                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                    setNewDate(localDate.toISOString().split("T")[0]);
+                  } else {
+                    setNewDate("");
+                  }
+                }} 
+              />
+            </div>
+            <div className="w-full md:w-auto">
+              <button 
+                onClick={handleAddSave}
+                disabled={newAmount === "" || !newDate || (!selectedTenant && tenants.length > 0)}
+                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-2 rounded text-sm font-medium transition whitespace-nowrap w-full"
+              >
+                שמור הכנסה
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -87,7 +187,9 @@ export default function PropertyIncomePage() {
                 <tbody className="divide-y">
                   {payments.map(payment => (
                     <tr key={payment.id} className="hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-900">{payment.tenantName}</td>
+                      <td className="p-3 font-medium text-gray-900">
+                        {payment.tenantName}
+                      </td>
                       <td className="p-3">{new Date(payment.expectedDate).toLocaleDateString('he-IL')}</td>
                       <td className="p-3">{payment.paidDate ? new Date(payment.paidDate).toLocaleDateString('he-IL') : '-'}</td>
                       <td className="p-3 font-bold text-green-600">₪{payment.amount.toLocaleString()}</td>
@@ -96,10 +198,13 @@ export default function PropertyIncomePage() {
                           {payment.status === 'PAID' ? 'שולם' : payment.status}
                         </span>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3 flex items-center gap-3">
                         <Link href={`/dashboard/properties/${id}/tenants/${payment.tenantId}/payments`} className="text-blue-600 hover:underline text-xs">
                           נהל בכרטיס שוכר
                         </Link>
+                        <button onClick={() => handleDelete(payment.id!)} className="text-red-500 hover:text-red-700 transition" title="מחק תשלום">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
