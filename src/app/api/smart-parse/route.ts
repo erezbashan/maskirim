@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let responseText = result.response.text().trim();
+    let responseText = result?.response.text().trim() || "";
     if (responseText.startsWith("```json")) {
       responseText = responseText.replace(/^```json\n/, "").replace(/\n```$/, "");
     }

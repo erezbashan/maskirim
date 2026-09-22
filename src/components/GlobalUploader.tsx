@@ -79,7 +79,7 @@ export default function GlobalUploader() {
       if (parsedData.propertyInfo?.address) {
         targetPropertyId = await addProperty({
           userId: user.uid,
-          ownerName: parsedData.propertyInfo.ownerName || user.name || "אני",
+          ownerName: parsedData.propertyInfo.ownerName || (user as any).displayName || "אני",
           address: parsedData.propertyInfo.address,
           city: parsedData.propertyInfo.city || "",
           createdAt: new Date().toISOString()

@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let responseText = result.response.text().trim();
+    let responseText = result?.response.text().trim() || "";
     // Clean up potential markdown formatting
     if (responseText.startsWith("\`\`\`json")) {
       responseText = responseText.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
