@@ -26,18 +26,46 @@ export default function GlobalUploader() {
   
   useEffect(() => {
     if (user && step === "REVIEW") {
-      getPropertiesByUser(user.uid).then(setProperties).catch(console.error);
+      getPropertiesByUser(user.uid).then(fetchedProps => {
+        setProperties(fetchedProps);
+        if (parsedData?.propertyInfo?.address) {
+          const extractedAddress = parsedData.propertyInfo.address.replace(/\s+/g, "");
+          const match = fetchedProps.find(p => 
+            p.address.replace(/\s+/g, "").includes(extractedAddress) || 
+            extractedAddress.includes(p.address.replace(/\s+/g, ""))
+          );
+          if (match && match.id) {
+            setSelectedPropertyId(match.id);
+          }
+        }
+      }).catch(console.error);
     }
-  }, [user, step]);
+  }, [user, step, parsedData]);
 
   useEffect(() => {
     if (selectedPropertyId !== "NEW" && selectedPropertyId !== "UNKNOWN") {
-      getTenantsByProperty(selectedPropertyId).then(setTenants).catch(console.error);
+      getTenantsByProperty(selectedPropertyId).then(fetchedTenants => {
+        setTenants(fetchedTenants);
+        if (parsedData?.tenantInfo?.name) {
+          const extractedName = parsedData.tenantInfo.name.replace(/\s+/g, "");
+          const match = fetchedTenants.find(t => 
+            t.name.replace(/\s+/g, "").includes(extractedName) || 
+            extractedName.includes(t.name.replace(/\s+/g, ""))
+          );
+          if (match && match.id) {
+            setSelectedTenantId(match.id);
+          } else {
+            setSelectedTenantId("NEW");
+          }
+        } else {
+          setSelectedTenantId("NEW");
+        }
+      }).catch(console.error);
     } else {
       setTenants([]);
       setSelectedTenantId("NEW");
     }
-  }, [selectedPropertyId]);
+  }, [selectedPropertyId, parsedData]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
