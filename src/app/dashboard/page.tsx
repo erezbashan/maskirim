@@ -4,8 +4,9 @@ import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getPropertiesByUser, getTenantsByProperty, getRentPeriodsByTenant, getRentPaymentsByUser, addRentPayment } from "@/lib/db";
+import { Property } from "@/lib/types";
 import Link from "next/link";
-import { Check, Bell, FileText, AlertTriangle } from "lucide-react";
+import { Check, Bell, FileText, AlertTriangle, ArrowLeft } from "lucide-react";
 
 export type ReminderType = 'PAYMENT_DUE' | 'LEASE_EXPIRATION' | 'OPTION_DEADLINE';
 export interface ActiveReminder {
@@ -23,6 +24,7 @@ export interface ActiveReminder {
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [properties, setProperties] = useState<Property[]>([]);
   const [propertiesCount, setPropertiesCount] = useState<number | null>(null);
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
   const [reminders, setReminders] = useState<ActiveReminder[]>([]);
@@ -34,6 +36,7 @@ export default function DashboardPage() {
         if (props.length === 0) {
           router.push("/dashboard/properties/new");
         } else {
+          setProperties(props);
           setPropertiesCount(props.length);
           
           let totalMonthlyIncome = 0;
@@ -190,13 +193,32 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-3xl font-bold mb-6">ברוך הבא למערכת ניהול הנכסים</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link href="/dashboard/properties" className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition block cursor-pointer">
-            <h3 className="text-xl font-semibold mb-2">נכסים פעילים</h3>
-            <p className="text-3xl font-bold text-blue-600">{propertiesCount}</p>
-          </Link>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col h-full">
+            <h3 className="text-xl font-semibold mb-4 border-b pb-2">הנכסים שלי ({propertiesCount})</h3>
+            <div className="flex-1 space-y-3">
+              {properties.slice(0, 5).map(p => (
+                <Link 
+                  key={p.id} 
+                  href={`/dashboard/properties/${p.id}`}
+                  className="block hover:bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 transition"
+                >
+                  <p className="font-semibold text-blue-600">{p.address}</p>
+                  <p className="text-sm text-gray-500">{p.city}</p>
+                </Link>
+              ))}
+            </div>
+            {properties.length > 5 && (
+              <Link 
+                href="/dashboard/properties"
+                className="mt-4 text-center block w-full py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded transition font-medium"
+              >
+                צפה בכל {properties.length} הנכסים
+              </Link>
+            )}
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-center">
             <h3 className="text-xl font-semibold mb-2">הכנסה חודשית (צפי)</h3>
-            <p className="text-3xl font-bold text-green-600">₪{monthlyIncome.toLocaleString()}</p>
+            <p className="text-4xl font-bold text-green-600">₪{monthlyIncome.toLocaleString()}</p>
           </div>
         </div>
       </div>
