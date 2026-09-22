@@ -189,15 +189,11 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold mb-6">ברוך הבא למערכת ניהול הנכסים</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link href="/dashboard/properties" className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition block cursor-pointer">
             <h3 className="text-xl font-semibold mb-2">נכסים פעילים</h3>
             <p className="text-3xl font-bold text-blue-600">{propertiesCount}</p>
           </Link>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-xl font-semibold mb-2">תזכורות</h3>
-            <p className="text-3xl font-bold text-orange-500">{reminders.length}</p>
-          </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <h3 className="text-xl font-semibold mb-2">הכנסה חודשית (צפי)</h3>
             <p className="text-3xl font-bold text-green-600">₪{monthlyIncome.toLocaleString()}</p>
