@@ -208,6 +208,8 @@ export default function GlobalUploader() {
           endDate: parsedData.rentPeriodInfo?.endDate || "",
           monthlyRent: parsedData.rentPeriodInfo?.monthlyRent || 0,
           guaranteeType: parsedData.rentPeriodInfo?.guarantees || "",
+          renewalTerms: parsedData.rentPeriodInfo?.renewalTerms || "",
+          renewalDeadline: parsedData.rentPeriodInfo?.renewalDeadline || "",
           documentUrl: fileUrl,
           createdAt: new Date().toISOString()
         });
@@ -383,6 +385,14 @@ export default function GlobalUploader() {
                       <Label>תאריך סיום</Label>
                       <Input type="date" value={parsedData.rentPeriodInfo?.endDate || ""} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, endDate: e.target.value}})} />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>תנאי אופציה להארכה (אם יש)</Label>
+                    <Input value={parsedData.rentPeriodInfo?.renewalTerms || ""} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, renewalTerms: e.target.value}})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>תאריך אחרון להודעה על מימוש אופציה</Label>
+                    <Input type="date" value={parsedData.rentPeriodInfo?.renewalDeadline || ""} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, renewalDeadline: e.target.value}})} />
                   </div>
                 </>
               )}

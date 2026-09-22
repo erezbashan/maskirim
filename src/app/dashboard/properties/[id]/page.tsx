@@ -175,6 +175,12 @@ export default function PropertyDetailsPage() {
                                 <p><strong>שכירות:</strong> ₪{period.monthlyRent}</p>
                                 {period.guaranteeType && <p><strong>ערבות:</strong> {period.guaranteeType}</p>}
                               </div>
+                              {(period.renewalTerms || period.renewalDeadline) && (
+                                <div className="mt-2 bg-blue-50 p-2 rounded text-blue-800 text-xs">
+                                  {period.renewalTerms && <p><strong>אופציה:</strong> {period.renewalTerms}</p>}
+                                  {period.renewalDeadline && <p><strong>תאריך אחרון להודעה:</strong> {new Date(period.renewalDeadline).toLocaleDateString('he-IL')}</p>}
+                                </div>
+                              )}
                               <div className="flex space-x-3 space-x-reverse text-xs mt-3 pt-2 border-t border-gray-100 items-center">
                                 <Link href={`/dashboard/properties/${id}/tenants/${tenant.id}/rent-periods/${period.id}/edit`} className="text-gray-400 hover:text-blue-600 transition" title="ערוך תקופה">
                                   <Pencil className="w-4 h-4" />

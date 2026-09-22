@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
           "startDate": "YYYY-MM-DD",
           "endDate": "YYYY-MM-DD",
           "monthlyRent": null,
-          "guarantees": "Extracted guarantee details"
+          "guarantees": "Extracted guarantee details",
+          "renewalTerms": "Details about optional extension (תקופת אופציה)",
+          "renewalDeadline": "YYYY-MM-DD (Calculated deadline to notify about extension)"
         },
         "expenseInfo": {
           "amount": 0,
@@ -81,7 +83,8 @@ export async function POST(req: NextRequest) {
       
       If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo. If it's a generic file or ID card, fill otherInfo.
       If a field is missing or not applicable, leave it empty or null. For paymentDueDay AND monthlyRent, set it to a number ONLY if explicitly stated, otherwise return null. DO NOT GUESS OR USE DEFAULTS.
-      IMPORTANT FOR DATES: For endDate, extract ONLY the definite base period's end date. DO NOT include optional extension periods (תקופת אופציה) in the endDate.
+      IMPORTANT FOR DATES: For endDate, extract ONLY the definite base period's end date. DO NOT include optional extension periods (תקופת אופציה) in the endDate. Put option details in renewalTerms.
+      For renewalDeadline, if the contract states notification must be given X days before the end, calculate and return that exact date (YYYY-MM-DD) based on the endDate.
     `;
 
     let result;
