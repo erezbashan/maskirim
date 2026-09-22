@@ -246,6 +246,7 @@ export default function GlobalUploader() {
       
       if (targetPropertyId !== "UNKNOWN") {
         router.push(`/dashboard/properties/${targetPropertyId}`);
+        router.refresh();
       } else {
         router.refresh();
       }

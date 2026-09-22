@@ -92,7 +92,7 @@ export default function TenantDetailsPage() {
                     {period.guaranteeType && <p className="text-sm mt-2"><strong>ערבויות:</strong> {period.guaranteeType}</p>}
                     {period.documentUrl && (
                       <a href={period.documentUrl} target="_blank" rel="noreferrer" className="text-blue-500 underline text-sm mt-2 inline-block">
-                        צפה בחוזה / מסמך
+                        צפה במסמך
                       </a>
                     )}
                   </div>

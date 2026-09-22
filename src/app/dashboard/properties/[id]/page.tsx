@@ -183,7 +183,7 @@ export default function PropertyDetailsPage() {
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                                 {period.documentUrl && (
-                                  <a href={period.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-semibold pr-2 border-r border-gray-300">📄 צפה בחוזה</a>
+                                  <a href={period.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-semibold pr-2 border-r border-gray-300">📄 צפה במסמך</a>
                                 )}
                               </div>
                             </div>
