@@ -231,7 +231,7 @@ export default function GlobalUploader() {
         docName = parsedData.otherInfo?.title || originalFile.name;
       }
 
-      await addDocumentRecord({
+      const docRecord = {
         userId: user.uid,
         propertyId: targetPropertyId !== "UNKNOWN" ? targetPropertyId : undefined,
         tenantId: targetTenantId,
@@ -240,7 +240,12 @@ export default function GlobalUploader() {
         url: fileUrl,
         type: (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") ? "LEASE" : parsedData.documentType === "EXPENSE" ? "EXPENSE" : "OTHER",
         createdAt: (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") && parsedData.otherInfo?.date ? new Date(parsedData.otherInfo.date).toISOString() : new Date().toISOString()
-      });
+      };
+
+      // Strip undefined values to prevent Firestore errors
+      Object.keys(docRecord).forEach(key => (docRecord as any)[key] === undefined && delete (docRecord as any)[key]);
+
+      await addDocumentRecord(docRecord as any);
 
       setStep("IDLE");
       setParsedData(null);
