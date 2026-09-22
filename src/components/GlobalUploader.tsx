@@ -251,6 +251,11 @@ export default function GlobalUploader() {
       setParsedData(null);
       setOriginalFile(null);
       
+      // Dispatch event to trigger client component re-fetch
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("propertyDataUpdated"));
+      }
+
       if (targetPropertyId !== "UNKNOWN") {
         router.push(`/dashboard/properties/${targetPropertyId}`);
         router.refresh();

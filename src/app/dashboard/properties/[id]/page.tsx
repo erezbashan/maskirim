@@ -61,6 +61,16 @@ export default function PropertyDetailsPage() {
     };
     
     fetchData();
+
+    // Listen for cross-component refresh events (e.g. from GlobalUploader)
+    const handleRefresh = () => {
+      fetchData();
+    };
+    window.addEventListener("propertyDataUpdated", handleRefresh);
+
+    return () => {
+      window.removeEventListener("propertyDataUpdated", handleRefresh);
+    };
   }, [user, id]);
 
   const handleDeleteTenant = async (tenantId: string) => {
@@ -230,7 +240,7 @@ export default function PropertyDetailsPage() {
               <p className="text-gray-500">אין הוצאות רשומות</p>
             ) : (
               <div className="space-y-4">
-                {expenses.map((expense) => (
+                {[...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((expense) => (
                   <div key={expense.id} className="p-4 border rounded shadow-sm">
                     <p><strong>תאריך:</strong> {new Date(expense.date).toLocaleDateString('he-IL')}</p>
                     <p><strong>סכום:</strong> ₪{expense.amount}</p>
@@ -255,7 +265,7 @@ export default function PropertyDetailsPage() {
               <p className="text-gray-500">אין מסמכים מצורפים לנכס זה</p>
             ) : (
               <div className="space-y-2">
-                {documents.map((doc) => (
+                {[...documents].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((doc) => (
                   <div key={doc.id} className="p-3 border rounded shadow-sm flex justify-between items-center bg-gray-50">
                     <div>
                       <p className="font-semibold text-gray-800">{doc.name}</p>
