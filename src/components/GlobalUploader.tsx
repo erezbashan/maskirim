@@ -26,26 +26,43 @@ export default function GlobalUploader() {
     setStep("ANALYZING");
     
     try {
-      const data = new FormData();
-      data.append("file", file);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Data = (reader.result as string).split(',')[1];
+          const payload = {
+            fileName: file.name,
+            mimeType: file.type || "application/pdf",
+            fileData: base64Data
+          };
 
-      const res = await fetch("/api/smart-parse", {
-        method: "POST",
-        body: data,
-      });
+          const res = await fetch("/api/smart-parse", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload),
+          });
 
-      if (!res.ok) throw new Error("Failed to parse");
+          if (!res.ok) throw new Error("Failed to parse");
 
-      const json = await res.json();
-      setParsedData(json);
-      setStep("REVIEW");
+          const json = await res.json();
+          setParsedData(json);
+          setStep("REVIEW");
+        } catch (err) {
+          console.error(err);
+          alert("שגיאה בפענוח המסמך. אנא נסה שנית או הוסף ידנית.");
+          setStep("IDLE");
+        }
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
       console.error(err);
       alert("שגיאה בפענוח המסמך. אנא נסה שנית או הוסף ידנית.");
       setStep("IDLE");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-    
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleConfirm = async () => {

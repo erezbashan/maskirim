@@ -13,10 +13,10 @@ export async function POST(req: NextRequest) {
   const fileManager = apiKey ? new GoogleAIFileManager(apiKey) : null;
 
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const body = await req.json();
+    const { fileName, mimeType, fileData } = body;
 
-    if (!file) {
+    if (!fileData) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
@@ -28,19 +28,18 @@ export async function POST(req: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    console.log(`[API] File received: ${file.name}, Size: ${buffer.length} bytes, Type: ${file.type}`);
+    const buffer = Buffer.from(fileData, 'base64');
+    console.log(`[API] File received: ${fileName}, Size: ${buffer.length} bytes, Type: ${mimeType}`);
     
     // Save to temp file
-    tmpFilePath = join(tmpdir(), `${randomUUID()}-${file.name}`);
+    tmpFilePath = join(tmpdir(), `${randomUUID()}-${fileName}`);
     await writeFile(tmpFilePath, buffer);
     console.log(`[API] Saved to temp file: ${tmpFilePath}`);
 
     // Upload to Gemini
     const uploadResponse = await fileManager.uploadFile(tmpFilePath, {
-      mimeType: file.type || "application/pdf",
-      displayName: file.name,
+      mimeType: mimeType || "application/pdf",
+      displayName: fileName,
     });
     uploadedFileUri = uploadResponse.file.uri;
     console.log(`[API] Uploaded to Gemini File API: ${uploadedFileUri}`);
