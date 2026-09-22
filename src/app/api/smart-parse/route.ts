@@ -59,13 +59,13 @@ export async function POST(req: NextRequest) {
           "ownerName": "Extracted landlord/owner name (המשכיר)"
         },
         "tenantInfo": {
-          "name": "Extracted tenant name (השוכר)"
+          "name": "Extracted tenant name (השוכר)",
+          "paymentDueDay": null
         },
         "rentPeriodInfo": {
           "startDate": "YYYY-MM-DD",
           "endDate": "YYYY-MM-DD",
           "monthlyRent": 0,
-          "paymentDueDay": 1,
           "guarantees": "Extracted guarantee details"
         },
         "expenseInfo": {
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       }
       
       If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo.
-      If a field is missing or not applicable, leave it empty or 0.
+      If a field is missing or not applicable, leave it empty or 0. For paymentDueDay, set it strictly to the number (1-31) ONLY if explicitly stated, otherwise return null. DO NOT GUESS OR USE DEFAULTS.
     `;
 
     let result;

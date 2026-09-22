@@ -59,8 +59,12 @@ export const deleteProperty = async (id: string) => {
 };
 
 // Tenants
-export const addTenant = async (tenant: Tenant) => {
-  const docRef = await addDoc(collection(db, "tenants"), tenant);
+export async function addTenant(tenant: Tenant): Promise<string> {
+  const docRef = await addDoc(collection(db, "tenants"), {
+    ...tenant,
+    paymentDueDay: tenant.paymentDueDay || null,
+    createdAt: tenant.createdAt || new Date().toISOString()
+  });
   return docRef.id;
 };
 

@@ -21,6 +21,7 @@ export interface Tenant {
   name: string;
   phone?: string;
   email?: string;
+  paymentDueDay?: number | null;
   createdAt: string;
 }
 
@@ -30,7 +31,6 @@ export interface RentPeriod {
   startDate: string;
   endDate: string;
   monthlyRent: number;
-  paymentDueDay?: number;
   renewalDeadline?: string; // e.g. date by which renewal must be agreed
   renewalTerms?: string;
   guaranteeType?: string;

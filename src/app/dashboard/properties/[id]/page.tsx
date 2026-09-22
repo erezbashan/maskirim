@@ -77,7 +77,7 @@ export default function PropertyDetailsPage() {
 
         <Card className="md:col-span-2">
           <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle>שוכרים (Tenants)</CardTitle>
+            <CardTitle>שוכרים</CardTitle>
             <Link 
               href={`/dashboard/properties/${id}/tenants/new`}
               className="bg-blue-600 text-white px-3 py-1 text-sm rounded hover:bg-blue-700"

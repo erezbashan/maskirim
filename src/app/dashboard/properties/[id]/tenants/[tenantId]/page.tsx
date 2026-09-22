@@ -68,7 +68,7 @@ export default function TenantDetailsPage() {
 
         <Card className="md:col-span-2">
           <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle>תקופות שכירות (Rent Periods)</CardTitle>
+            <CardTitle>תקופות שכירות</CardTitle>
             <Link 
               href={`/dashboard/properties/${propertyId}/tenants/${tenantId}/rent-periods/new`}
               className="bg-blue-600 text-white px-3 py-1 text-sm rounded hover:bg-blue-700"
@@ -87,7 +87,7 @@ export default function TenantDetailsPage() {
                       <p><strong>תאריך התחלה:</strong> {new Date(period.startDate).toLocaleDateString()}</p>
                       <p><strong>תאריך סיום:</strong> {new Date(period.endDate).toLocaleDateString()}</p>
                       <p><strong>שכר דירה:</strong> ₪{period.monthlyRent}</p>
-                      <p><strong>יום תשלום:</strong> ה-{period.paymentDueDay} בחודש</p>
+                      {tenant?.paymentDueDay && <p><strong>יום תשלום:</strong> ה-{tenant.paymentDueDay} בחודש</p>}
                     </div>
                     {period.guaranteeType && <p className="text-sm mt-2"><strong>ערבויות:</strong> {period.guaranteeType}</p>}
                     {period.documentUrl && (

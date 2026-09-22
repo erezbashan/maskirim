@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { uploadDocumentFile, addDocumentRecord, addTenant, addRentPeriod, addExpense, addProperty } from "@/lib/db";
+import { uploadDocumentFile, addDocumentRecord, addTenant, addRentPeriod, addExpense, addProperty, getPropertiesByUser, getTenantsByProperty } from "@/lib/db";
+import { Property, Tenant } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,26 @@ export default function GlobalUploader() {
   const [parsedData, setParsedData] = useState<any>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [step, setStep] = useState<"IDLE" | "ANALYZING" | "REVIEW" | "SAVING">("IDLE");
+  
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("NEW");
+  const [selectedTenantId, setSelectedTenantId] = useState<string>("NEW");
+  
+  useEffect(() => {
+    if (user && step === "REVIEW") {
+      getPropertiesByUser(user.uid).then(setProperties).catch(console.error);
+    }
+  }, [user, step]);
+
+  useEffect(() => {
+    if (selectedPropertyId !== "NEW" && selectedPropertyId !== "UNKNOWN") {
+      getTenantsByProperty(selectedPropertyId).then(setTenants).catch(console.error);
+    } else {
+      setTenants([]);
+      setSelectedTenantId("NEW");
+    }
+  }, [selectedPropertyId]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,9 +104,8 @@ export default function GlobalUploader() {
       const fileUrl = await uploadDocumentFile(user.uid, originalFile);
       
       // 2. Identify or Create Property
-      let targetPropertyId = "UNKNOWN"; // In a real app, query DB to match address
-      // For now, we'll auto-create the property if we have an address
-      if (parsedData.propertyInfo?.address) {
+      let targetPropertyId = selectedPropertyId;
+      if (selectedPropertyId === "NEW" && parsedData.propertyInfo?.address) {
         targetPropertyId = await addProperty({
           userId: user.uid,
           ownerName: parsedData.propertyInfo.ownerName || (user as any).displayName || "אני",
@@ -96,22 +116,24 @@ export default function GlobalUploader() {
       }
 
       // 3. Save Specific Entity
-      let targetTenantId = undefined;
+      let targetTenantId = selectedTenantId === "NEW" ? undefined : selectedTenantId;
       let targetRentPeriodId = undefined;
 
       if (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") {
-        targetTenantId = await addTenant({
-          propertyId: targetPropertyId,
-          name: parsedData.tenantInfo?.name || "שוכר לא ידוע",
-          createdAt: new Date().toISOString()
-        });
+        if (!targetTenantId) {
+          targetTenantId = await addTenant({
+            propertyId: targetPropertyId,
+            name: parsedData.tenantInfo?.name || "שוכר לא ידוע",
+            paymentDueDay: parsedData.tenantInfo?.paymentDueDay || null,
+            createdAt: new Date().toISOString()
+          });
+        }
 
         targetRentPeriodId = await addRentPeriod({
           tenantId: targetTenantId,
           startDate: parsedData.rentPeriodInfo?.startDate || "",
           endDate: parsedData.rentPeriodInfo?.endDate || "",
           monthlyRent: parsedData.rentPeriodInfo?.monthlyRent || 0,
-          paymentDueDay: parsedData.rentPeriodInfo?.paymentDueDay || 1,
           guaranteeType: parsedData.rentPeriodInfo?.guarantees || "",
           documentUrl: fileUrl,
           createdAt: new Date().toISOString()
@@ -197,35 +219,77 @@ export default function GlobalUploader() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <CardHeader className="border-b bg-blue-50">
-              <CardTitle>אישור נתונים שחולצו ({parsedData.documentType})</CardTitle>
+              <CardTitle>אישור נתונים שחולצו ({
+                parsedData.documentType === 'LEASE' ? 'חוזה שכירות' :
+                parsedData.documentType === 'EXTENSION' ? 'הארכת חוזה' :
+                parsedData.documentType === 'EXPENSE' ? 'הוצאה' :
+                parsedData.documentType === 'ID_CARD' ? 'תעודת זהות' : 'אחר'
+              })</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>כתובת (נכס)</Label>
-                  <Input value={parsedData.propertyInfo?.address || ""} onChange={(e) => setParsedData({...parsedData, propertyInfo: {...parsedData.propertyInfo, address: e.target.value}})} />
-                </div>
-                <div className="space-y-2">
-                  <Label>בעלים רשום (משכיר)</Label>
-                  <Input value={parsedData.propertyInfo?.ownerName || ""} onChange={(e) => setParsedData({...parsedData, propertyInfo: {...parsedData.propertyInfo, ownerName: e.target.value}})} />
+              <div className="space-y-4 mb-4 pb-4 border-b">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">שייך לנכס</Label>
+                    <select 
+                      className="w-full border rounded p-2 text-sm bg-white"
+                      value={selectedPropertyId}
+                      onChange={(e) => setSelectedPropertyId(e.target.value)}
+                    >
+                      <option value="NEW">+ צור נכס חדש</option>
+                      {properties.map(p => (
+                        <option key={p.id} value={p.id}>{p.address} {p.city ? `(${p.city})` : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {(parsedData.documentType === 'LEASE' || parsedData.documentType === 'EXTENSION') && selectedPropertyId !== "NEW" && (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">שייך לשוכר</Label>
+                      <select 
+                        className="w-full border rounded p-2 text-sm bg-white"
+                        value={selectedTenantId}
+                        onChange={(e) => setSelectedTenantId(e.target.value)}
+                      >
+                        <option value="NEW">+ צור שוכר חדש</option>
+                        {tenants.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {selectedPropertyId === "NEW" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>כתובת (נכס חדש)</Label>
+                    <Input value={parsedData.propertyInfo?.address || ""} onChange={(e) => setParsedData({...parsedData, propertyInfo: {...parsedData.propertyInfo, address: e.target.value}})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>בעלים רשום (משכיר)</Label>
+                    <Input value={parsedData.propertyInfo?.ownerName || ""} onChange={(e) => setParsedData({...parsedData, propertyInfo: {...parsedData.propertyInfo, ownerName: e.target.value}})} />
+                  </div>
+                </div>
+              )}
               
               {(parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") && (
                 <>
+                  {selectedTenantId === "NEW" && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>שוכרים (שוכר חדש)</Label>
+                        <Input value={parsedData.tenantInfo?.name || ""} onChange={(e) => setParsedData({...parsedData, tenantInfo: {...parsedData.tenantInfo, name: e.target.value}})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>יום תשלום בחודש (אופציונלי)</Label>
+                        <Input type="number" placeholder="לדוגמה 1 או 10" value={parsedData.tenantInfo?.paymentDueDay || ""} onChange={(e) => setParsedData({...parsedData, tenantInfo: {...parsedData.tenantInfo, paymentDueDay: parseInt(e.target.value) || null}})} />
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
-                    <Label>שוכרים</Label>
-                    <Input value={parsedData.tenantInfo?.name || ""} onChange={(e) => setParsedData({...parsedData, tenantInfo: {...parsedData.tenantInfo, name: e.target.value}})} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>שכירות (₪)</Label>
-                      <Input type="number" value={parsedData.rentPeriodInfo?.monthlyRent || 0} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, monthlyRent: parseFloat(e.target.value)}})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>יום תשלום בחודש</Label>
-                      <Input type="number" value={parsedData.rentPeriodInfo?.paymentDueDay || 1} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, paymentDueDay: parseInt(e.target.value)}})} />
-                    </div>
+                    <Label>שכירות לחודש (₪)</Label>
+                    <Input type="number" value={parsedData.rentPeriodInfo?.monthlyRent || 0} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, monthlyRent: parseFloat(e.target.value)}})} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

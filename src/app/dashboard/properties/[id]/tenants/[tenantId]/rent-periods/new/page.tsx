@@ -18,7 +18,6 @@ export default function NewRentPeriodPage() {
     startDate: "",
     endDate: "",
     monthlyRent: "",
-    paymentDueDay: "1",
     guaranteeType: "",
     renewalDeadline: "",
     renewalTerms: "",
@@ -40,7 +39,6 @@ export default function NewRentPeriodPage() {
         startDate: formData.startDate,
         endDate: formData.endDate,
         monthlyRent: parseFloat(formData.monthlyRent) || 0,
-        paymentDueDay: parseInt(formData.paymentDueDay) || 1,
         guaranteeType: formData.guaranteeType,
         renewalDeadline: formData.renewalDeadline,
         renewalTerms: formData.renewalTerms,
@@ -86,10 +84,6 @@ export default function NewRentPeriodPage() {
               <div className="space-y-2">
                 <Label htmlFor="monthlyRent">שכר דירה חודשי (₪)</Label>
                 <Input id="monthlyRent" name="monthlyRent" type="number" required value={formData.monthlyRent} onChange={handleChange} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="paymentDueDay">יום תשלום בחודש (1-31)</Label>
-                <Input id="paymentDueDay" name="paymentDueDay" type="number" min="1" max="31" required value={formData.paymentDueDay} onChange={handleChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="guaranteeType">סוג ערבות</Label>
