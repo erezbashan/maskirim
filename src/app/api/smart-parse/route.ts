@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       Do NOT include any markdown formatting, just the raw JSON string.
       
       {
-        "documentType": "LEASE" | "EXTENSION" | "EXPENSE" | "ID_CARD" | "OTHER",
+        "documentType": "LEASE" | "EXTENSION" | "TERMINATION" | "EXPENSE" | "ID_CARD" | "OTHER",
         "propertyInfo": {
           "address": "Extracted street address (or empty string)",
           "city": "Extracted city (or empty string)",
@@ -76,12 +76,12 @@ export async function POST(req: NextRequest) {
           "description": "Short description of expense"
         },
         "otherInfo": {
-          "title": "Short descriptive title of the document (e.g. 'תעודת זהות של אופיר', 'חשבון ארנונה')",
+          "title": "Short descriptive title of the document (e.g. 'תעודת זהות של אופיר', 'סיום חוזה שכירות')",
           "date": "YYYY-MM-DD or empty string"
         }
       }
       
-      If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo. If it's a generic file or ID card, fill otherInfo.
+      If the document is a LEASE or EXTENSION, fill tenantInfo and rentPeriodInfo. If it's a receipt/invoice, fill expenseInfo. If it is a lease termination (סיום חוזה / ביטול חוזה), use TERMINATION and fill otherInfo. If it's a generic file or ID card, fill otherInfo.
       If a field is missing or not applicable, leave it empty or null. For paymentDueDay AND monthlyRent, set it to a number ONLY if explicitly stated, otherwise return null. DO NOT GUESS OR USE DEFAULTS.
       IMPORTANT FOR DATES: For endDate, extract ONLY the definite base period's end date. DO NOT include optional extension periods (תקופת אופציה) in the endDate. Put option details in renewalTerms.
       For renewalTerms, if there are no explicit terms for an extension or if the document states there is no extension, leave it completely empty (""). Do not write "לא תתווסף" or similar phrases.

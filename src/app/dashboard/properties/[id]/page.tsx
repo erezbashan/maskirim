@@ -156,10 +156,34 @@ export default function PropertyDetailsPage() {
             ) : (
               <div className="space-y-6">
                 {sortedTenants.map(tenant => {
-                  const firstPeriod = rentPeriodsByTenant[tenant.id!] && rentPeriodsByTenant[tenant.id!].length > 0
-                    ? [...rentPeriodsByTenant[tenant.id!]].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0]
+                  const tenantPeriods = rentPeriodsByTenant[tenant.id!] || [];
+                  const firstPeriod = tenantPeriods.length > 0
+                    ? [...tenantPeriods].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0]
                     : null;
                   const originalLeaseUrl = firstPeriod?.documentUrl;
+                  const terminationDoc = documents.find(d => d.tenantId === tenant.id && d.type === "TERMINATION");
+
+                  // Calculate status
+                  let status = "לא מוגדר";
+                  let statusColor = "bg-gray-100 text-gray-800";
+                  
+                  if (tenantPeriods.length > 0) {
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    const earliestStart = new Date(Math.min(...tenantPeriods.map(p => new Date(p.startDate).getTime())));
+                    const latestEnd = new Date(Math.max(...tenantPeriods.map(p => new Date(p.endDate).getTime())));
+                    
+                    if (now < earliestStart) {
+                      status = "שוכר עתידי";
+                      statusColor = "bg-purple-100 text-purple-800";
+                    } else if (now > latestEnd) {
+                      status = "שוכר עבר";
+                      statusColor = "bg-gray-200 text-gray-600";
+                    } else {
+                      status = "שוכר פעיל";
+                      statusColor = "bg-green-100 text-green-800";
+                    }
+                  }
 
                   return (
                   <div key={tenant.id} className="border rounded-lg shadow-sm overflow-hidden">
@@ -167,9 +191,19 @@ export default function PropertyDetailsPage() {
                       <div>
                         <div className="flex items-center space-x-3 space-x-reverse">
                           <h3 className="font-bold text-lg">{tenant.name}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+                            {status}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-3 space-x-reverse mt-2 mb-1">
                           {originalLeaseUrl && (
                             <a href={originalLeaseUrl} target="_blank" rel="noreferrer" className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">
                               📄 חוזה מקורי
+                            </a>
+                          )}
+                          {terminationDoc && (
+                            <a href={terminationDoc.url} target="_blank" rel="noreferrer" className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">
+                              📄 סיום חוזה
                             </a>
                           )}
                         </div>

@@ -162,7 +162,7 @@ export default function GlobalUploader() {
       if (!parsedData.expenseInfo?.amount) return false;
     }
 
-    if (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") {
+    if (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD" || parsedData.documentType === "TERMINATION") {
       if (!parsedData.otherInfo?.title) return false;
     }
 
@@ -229,7 +229,7 @@ export default function GlobalUploader() {
 
       // 4. Save Document Record
       let docName = originalFile.name;
-      if (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") {
+      if (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD" || parsedData.documentType === "TERMINATION") {
         docName = parsedData.otherInfo?.title || originalFile.name;
       }
 
@@ -241,7 +241,7 @@ export default function GlobalUploader() {
         name: docName,
         url: fileUrl,
         type: parsedData.documentType,
-        createdAt: (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") && parsedData.otherInfo?.date ? new Date(parsedData.otherInfo.date).toISOString() : new Date().toISOString()
+        createdAt: (parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD" || parsedData.documentType === "TERMINATION") && parsedData.otherInfo?.date ? new Date(parsedData.otherInfo.date).toISOString() : new Date().toISOString()
       };
 
       // Strip undefined values to prevent Firestore errors
@@ -315,6 +315,7 @@ export default function GlobalUploader() {
               <CardTitle>אישור נתונים שחולצו ({
                 parsedData.documentType === 'LEASE' ? 'חוזה שכירות' :
                 parsedData.documentType === 'EXTENSION' ? 'הארכת חוזה' :
+                parsedData.documentType === 'TERMINATION' ? 'סיום חוזה' :
                 parsedData.documentType === 'EXPENSE' ? 'הוצאה' :
                 parsedData.documentType === 'ID_CARD' ? 'תעודת זהות' : 'אחר'
               })</CardTitle>
@@ -435,7 +436,7 @@ export default function GlobalUploader() {
                 </>
               )}
 
-              {(parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD") && (
+              {(parsedData.documentType === "OTHER" || parsedData.documentType === "ID_CARD" || parsedData.documentType === "TERMINATION") && (
                 <>
                   <div className="space-y-2">
                     <Label>כותרת המסמך (חובה)</Label>

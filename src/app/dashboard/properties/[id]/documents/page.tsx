@@ -40,6 +40,7 @@ export default function DocumentsRepositoryPage() {
   const typeTranslations: Record<string, string> = {
     "LEASE": "חוזה שכירות",
     "EXTENSION": "הארכת שכירות",
+    "TERMINATION": "סיום חוזה",
     "EXPENSE": "הוצאה / קבלה",
     "ID_CARD": "תעודה מזהה",
     "OTHER": "מסמך כללי"

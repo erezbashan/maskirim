@@ -57,7 +57,7 @@ export interface Document {
   rentPeriodId?: string;
   name: string;
   url: string;
-  type: 'LEASE' | 'EXTENSION' | 'EXPENSE' | 'ID_CARD' | 'OTHER';
+  type: 'LEASE' | 'EXTENSION' | 'EXPENSE' | 'ID_CARD' | 'OTHER' | 'TERMINATION';
   createdAt: string;
 }
 
