@@ -55,15 +55,15 @@ export default function GlobalUploader() {
           if (match && match.id) {
             setSelectedTenantId(match.id);
           } else {
-            setSelectedTenantId("NEW");
+            setSelectedTenantId("");
           }
         } else {
-          setSelectedTenantId("NEW");
+          setSelectedTenantId("");
         }
       }).catch(console.error);
     } else {
       setTenants([]);
-      setSelectedTenantId("NEW");
+      setSelectedTenantId("");
     }
   }, [selectedPropertyId, parsedData]);
 
@@ -121,6 +121,27 @@ export default function GlobalUploader() {
       setStep("IDLE");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const isFormValid = () => {
+    if (!parsedData) return false;
+    if (selectedPropertyId === "") return false;
+    if (selectedPropertyId === "NEW" && !parsedData.propertyInfo?.address) return false;
+    
+    if (parsedData.documentType === "LEASE" || parsedData.documentType === "EXTENSION") {
+      if (selectedTenantId === "") return false;
+      if (selectedTenantId === "NEW") {
+        if (!parsedData.tenantInfo?.name) return false;
+        if (!parsedData.tenantInfo?.paymentDueDay) return false;
+      }
+      if (parsedData.rentPeriodInfo?.monthlyRent == null || parsedData.rentPeriodInfo.monthlyRent === "") return false;
+    }
+    
+    if (parsedData.documentType === "EXPENSE") {
+      if (!parsedData.expenseInfo?.amount) return false;
+    }
+
+    return true;
   };
 
   const handleConfirm = async () => {
@@ -264,13 +285,14 @@ export default function GlobalUploader() {
                       value={selectedPropertyId}
                       onChange={(e) => setSelectedPropertyId(e.target.value)}
                     >
-                      <option value="NEW">+ צור נכס חדש</option>
+                      <option value="" disabled>-- בחר נכס --</option>
                       {properties.map(p => (
                         <option key={p.id} value={p.id}>{p.address} {p.city ? `(${p.city})` : ''}</option>
                       ))}
+                      <option value="NEW">+ צור נכס חדש</option>
                     </select>
                   </div>
-                  {(parsedData.documentType === 'LEASE' || parsedData.documentType === 'EXTENSION') && selectedPropertyId !== "NEW" && (
+                  {(parsedData.documentType === 'LEASE' || parsedData.documentType === 'EXTENSION') && selectedPropertyId !== "NEW" && selectedPropertyId !== "" && (
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">שייך לשוכר</Label>
                       <select 
@@ -278,10 +300,11 @@ export default function GlobalUploader() {
                         value={selectedTenantId}
                         onChange={(e) => setSelectedTenantId(e.target.value)}
                       >
-                        <option value="NEW">+ צור שוכר חדש</option>
+                        <option value="" disabled>-- בחר שוכר --</option>
                         {tenants.map(t => (
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
+                        <option value="NEW">+ צור שוכר חדש</option>
                       </select>
                     </div>
                   )}
@@ -310,13 +333,13 @@ export default function GlobalUploader() {
                         <Input value={parsedData.tenantInfo?.name || ""} onChange={(e) => setParsedData({...parsedData, tenantInfo: {...parsedData.tenantInfo, name: e.target.value}})} />
                       </div>
                       <div className="space-y-2">
-                        <Label>יום תשלום בחודש (אופציונלי)</Label>
-                        <Input type="number" placeholder="לדוגמה 1 או 10" value={parsedData.tenantInfo?.paymentDueDay || ""} onChange={(e) => setParsedData({...parsedData, tenantInfo: {...parsedData.tenantInfo, paymentDueDay: parseInt(e.target.value) || null}})} />
+                        <Label>יום תשלום בחודש (חובה)</Label>
+                        <Input type="number" min="1" max="31" placeholder="לדוגמה 1 או 10" value={parsedData.tenantInfo?.paymentDueDay || ""} onChange={(e) => setParsedData({...parsedData, tenantInfo: {...parsedData.tenantInfo, paymentDueDay: parseInt(e.target.value) || null}})} />
                       </div>
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label>שכירות לחודש (₪)</Label>
+                    <Label>שכירות לחודש (חובה)</Label>
                     <Input type="number" placeholder="הזן סכום" value={parsedData.rentPeriodInfo?.monthlyRent ?? ""} onChange={(e) => setParsedData({...parsedData, rentPeriodInfo: {...parsedData.rentPeriodInfo, monthlyRent: parseFloat(e.target.value) || null}})} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -353,7 +376,13 @@ export default function GlobalUploader() {
             </CardContent>
             <CardFooter className="flex justify-between border-t p-4">
               <button onClick={() => setStep("IDLE")} className="px-4 py-2 text-red-600 hover:bg-red-50 rounded">ביטול</button>
-              <button onClick={handleConfirm} className="px-6 py-2 bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700">שמור ומיין מסמך</button>
+              <button 
+                onClick={handleConfirm} 
+                disabled={!isFormValid()}
+                className="px-6 py-2 bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                שמור ומיין מסמך
+              </button>
             </CardFooter>
           </Card>
         </div>
