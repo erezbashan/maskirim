@@ -12,6 +12,9 @@ export interface Property {
   address: string;
   city: string;
   notes?: string;
+  propertyValue?: number;
+  depreciationRate?: number; // Usually 0.02 (2%)
+  yearlyFinancingCosts?: number;
   createdAt: string;
 }
 
