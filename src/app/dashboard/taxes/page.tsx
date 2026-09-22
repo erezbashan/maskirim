@@ -32,7 +32,7 @@ function InfoPopup({ title, content }: { title: string, content: string }) {
         <HelpCircle className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 bottom-6 w-64 bg-white border shadow-xl p-3 rounded-lg text-sm text-gray-700 z-50">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-white border shadow-xl p-3 rounded-lg text-sm text-gray-700 z-50">
           <strong className="block mb-1 text-gray-900">{title}</strong>
           {content}
         </div>
@@ -188,7 +188,7 @@ export default function TaxesPage() {
         </a>
       </div>
 
-      <Card>
+      <Card className="overflow-visible">
         <CardContent className="p-6">
           <div className="flex flex-col gap-4 max-w-md">
             <div className="flex flex-col space-y-1.5">
@@ -267,7 +267,7 @@ export default function TaxesPage() {
             const propTotalExpenses = propExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
             return (
-              <Card key={prop.id} className={(!prop.propertyValue || prop.yearlyFinancingCosts === undefined) ? "border-orange-300" : ""}>
+              <Card key={prop.id} className={`overflow-visible ${(!prop.propertyValue || prop.yearlyFinancingCosts === undefined) ? "border-orange-300" : ""}`}>
                 <CardContent className="p-4">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex flex-col gap-1 min-w-[200px]">
